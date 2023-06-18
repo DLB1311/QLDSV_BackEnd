@@ -18,7 +18,25 @@ let getAllSinhVien = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+let hienSinhVien = async (req, res) => {
+  const { MaSV } = req.params;
 
+  try {
+    const query = `SELECT * FROM dbo.SinhVien WHERE MaSV = '${MaSV}'`;
+    const result = await pool.executeQuery(query);
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    const sinhVien = result[0];
+
+    res.status(200).json({ success: true, sinhVien });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 let themSinhVien = async (req, res) => {
   upload(req, res, async function (err) {
     if (err) {
@@ -124,8 +142,6 @@ let suaSinhVien = async (req, res) => {
     }
   });
 };
-
-
 let xoaSinhVien = async (req, res) => {
   const { MaSV } = req.params;
 
@@ -153,6 +169,7 @@ let xoaSinhVien = async (req, res) => {
 
 module.exports = {
   getAllSinhVien,
+  hienSinhVien,
   themSinhVien,
   suaSinhVien,
   xoaSinhVien,

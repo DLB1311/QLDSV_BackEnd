@@ -19,6 +19,26 @@ let getAllGiangVien = async (req, res) => {
   }
 };
 
+let hienGiangVien = async (req, res) => {
+  const { MaGV } = req.params;
+
+  try {
+    const query = `SELECT * FROM dbo.GiangVien WHERE MaGV = '${MaGV}'`;
+    const result = await pool.executeQuery(query);
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    const giangVien = result[0];
+
+    res.status(200).json({ success: true, giangVien });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 let themGiangVien = async (req, res) => {
   const { HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi, ChuyenMon } = req.body;
 
@@ -56,8 +76,59 @@ let themGiangVien = async (req, res) => {
   }
 };
 
+let suaGiangVien = async (req, res) => {
+  const { HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi, ChuyenMon } = req.body;
+  const { Magv } = req.params;  
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM dbo.GiangVien WHERE MaGV = '${Magv}'`;
+    const checkGiangVienResult = await pool.executeQuery(checkGiangVienQuery);
 
+    if (checkGiangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Cập nhật thông tin giảng viên
+    const updateGiangVienQuery = `UPDATE dbo.GiangVien SET HoTen = N'${HoTen}', HocVi = N'${HocVi}', HocHam = N'${HocHam}', Phai = ${Phai}, NgaySinh = '${NgaySinh}', DiaChi = N'${DiaChi}', ChuyenMon = N'${ChuyenMon}' WHERE MaGV = '${Magv}'`;
+
+    await pool.executeQuery(updateGiangVienQuery);
+
+    res.status(200).json({ success: true, message: 'Cập nhật giảng viên thành công', MaGV: Magv });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+let xoaGiangVien = async (req, res) => {
+  const { Magv } = req.params;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM dbo.GiangVien WHERE MaGV = '${Magv}'`;
+    const checkGiangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (checkGiangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Xóa giảng viên
+    const deleteGiangVienQuery = `DELETE FROM dbo.GiangVien WHERE MaGV = '${Magv}'`;
+    await pool.executeQuery(deleteGiangVienQuery);
+
+    // Xóa tài khoản của giảng viên
+    const deleteTaiKhoanQuery = `DELETE FROM dbo.TaiKhoan WHERE MaTk = '${Magv}'`;
+    await pool.executeQuery(deleteTaiKhoanQuery);
+
+    res.status(200).json({ success: true, message: 'Xóa giảng viên và tài khoản thành công', MaGV: Magv });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 module.exports = {
   getAllGiangVien,
+  hienGiangVien,
   themGiangVien,
+  suaGiangVien,
+  xoaGiangVien
 };
