@@ -40,7 +40,7 @@ let hienGiangVien = async (req, res) => {
 };
 
 let themGiangVien = async (req, res) => {
-  const { HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi, ChuyenMon } = req.body;
+  const { HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi } = req.body;
 
   try {
     // Lấy MaGV lớn nhất hiện tại từ bảng GiangVien để xác định số tiếp theo
@@ -56,8 +56,8 @@ let themGiangVien = async (req, res) => {
       nextMaGV = 'GV' + nextNumber.toString().padStart(1, '0'); // Tạo mã giảng viên tăng dần
     }
     // Thêm giảng viên vào bảng GiangVien
-    const insertGiangVienQuery = `INSERT INTO dbo.GiangVien (MaGV, HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi, ChuyenMon)
-    VALUES ('${nextMaGV}', N'${HoTen}', N'${HocVi}', N'${HocHam}', ${Phai}, '${NgaySinh}', N'${DiaChi}', N'${ChuyenMon}')`;
+    const insertGiangVienQuery = `INSERT INTO dbo.GiangVien (MaGV, HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi)
+    VALUES ('${nextMaGV}', N'${HoTen}', N'${HocVi}', N'${HocHam}', ${Phai}, '${NgaySinh}', N'${DiaChi}')`;
 
     await pool.executeQuery(insertGiangVienQuery);
 
@@ -77,7 +77,7 @@ let themGiangVien = async (req, res) => {
 };
 
 let suaGiangVien = async (req, res) => {
-  const { HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi, ChuyenMon } = req.body;
+  const { HoTen, HocVi, HocHam, Phai, NgaySinh, DiaChi} = req.body;
   const { Magv } = req.params;  
   try {
     // Kiểm tra xem giảng viên có tồn tại hay không
@@ -89,7 +89,7 @@ let suaGiangVien = async (req, res) => {
     }
 
     // Cập nhật thông tin giảng viên
-    const updateGiangVienQuery = `UPDATE dbo.GiangVien SET HoTen = N'${HoTen}', HocVi = N'${HocVi}', HocHam = N'${HocHam}', Phai = ${Phai}, NgaySinh = '${NgaySinh}', DiaChi = N'${DiaChi}', ChuyenMon = N'${ChuyenMon}' WHERE MaGV = '${Magv}'`;
+    const updateGiangVienQuery = `UPDATE dbo.GiangVien SET HoTen = N'${HoTen}', HocVi = N'${HocVi}', HocHam = N'${HocHam}', Phai = ${Phai}, NgaySinh = '${NgaySinh}', DiaChi = N'${DiaChi}' WHERE MaGV = '${Magv}'`;
 
     await pool.executeQuery(updateGiangVienQuery);
 
@@ -99,6 +99,7 @@ let suaGiangVien = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 let xoaGiangVien = async (req, res) => {
   const { Magv } = req.params;
 
@@ -125,10 +126,39 @@ let xoaGiangVien = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+let choGiangVienNghi = async (req, res) => {
+  const { MaGV } = req.params;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM dbo.GiangVien WHERE MaGV = '${MaGV}'`;
+    const checkGiangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (checkGiangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Cập nhật trạng thái nghỉ cho giảng viên
+    const updateGiangVienQuery = `UPDATE dbo.GiangVien SET TrangThaiNghi = 1 WHERE MaGV = '${MaGV}'`;
+    await pool.executeQuery(updateGiangVienQuery);
+
+    // Cập nhật trạng thái Active = false trong bảng TaiKhoan
+    const updateTaiKhoanQuery = `UPDATE dbo.TaiKhoan SET Active = 0 WHERE MaTk = '${MaGV}'`;
+    await pool.executeQuery(updateTaiKhoanQuery);
+
+    res.status(200).json({ success: true, message: 'Cho giảng viên nghỉ thành công', MaGV });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllGiangVien,
   hienGiangVien,
   themGiangVien,
   suaGiangVien,
-  xoaGiangVien
+  xoaGiangVien,
+  choGiangVienNghi
 };

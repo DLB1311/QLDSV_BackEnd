@@ -11,4 +11,6 @@ Router.post('/themgiangvien', auth.verifyTokenQuanLi,giangVienController.themGia
 Router.put('/suaGiangVien/:Magv', auth.verifyTokenQuanLi,giangVienController.suaGiangVien);
 Router.delete('/xoaGiangVien/:Magv', auth.verifyTokenQuanLi,giangVienController.xoaGiangVien);
 
+Router.put('/choGiangVienNghi/:Magv', auth.verifyTokenQuanLi,giangVienController.choGiangVienNghi);
+
 module.exports = Router 

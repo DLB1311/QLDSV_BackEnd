@@ -167,10 +167,37 @@ let xoaSinhVien = async (req, res) => {
   }
 };
 
+let choSinhVienNghi = async (req, res) => {
+  const { MaSV } = req.params;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM dbo.SinhVien WHERE MaSV = '${MaSV}'`;
+    const checkSinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (checkSinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Cập nhật trạng thái nghỉ cho sinh viên
+    const updateSinhVienQuery = `UPDATE dbo.SinhVien SET TrangThaiNghi = 1 WHERE MaSV = '${MaSV}'`;
+    await pool.executeQuery(updateSinhVienQuery);
+
+    // Cập nhật trạng thái Active = false trong bảng TaiKhoan
+    const updateTaiKhoanQuery = `UPDATE dbo.TaiKhoan SET Active = 0 WHERE MaTk = '${MaSV}'`;
+    await pool.executeQuery(updateTaiKhoanQuery);
+
+    res.status(200).json({ success: true, message: 'Cho sinh viên nghỉ thành công', MaSV });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 module.exports = {
   getAllSinhVien,
   hienSinhVien,
   themSinhVien,
   suaSinhVien,
   xoaSinhVien,
+  choSinhVienNghi,
 };

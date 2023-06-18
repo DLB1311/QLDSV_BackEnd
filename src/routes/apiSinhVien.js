@@ -11,7 +11,7 @@ Router.get('/hienSinhVien/:MaSV', auth.verifyTokenQuanLi , sinhVienController.hi
 Router.post('/themsinhvien', auth.verifyTokenQuanLi ,sinhVienController.themSinhVien);
 Router.put('/suasinhvien/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.suaSinhVien);
 Router.delete('/xoaSinhVien/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.xoaSinhVien);
-
+Router.put('/choSinhVienNghi/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.choSinhVienNghi);
 
 
 module.exports = Router 
