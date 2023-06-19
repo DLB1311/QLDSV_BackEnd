@@ -139,8 +139,21 @@ let choGiangVienNghi = async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
     }
 
+    // Kiểm tra xem giảng viên đang dạy một lớp tín chỉ còn hoạt động hay không
+    const checkDangDayQuery = `
+      SELECT *
+      FROM dbo.PhanCong pc
+      INNER JOIN dbo.LopTinChi ltc ON pc.MaLTC = ltc.MaLTC
+      WHERE pc.MaGV = '${MaGV}' AND ltc.Active = 1
+    `;
+    const checkDangDayResult = await pool.executeQuery(checkDangDayQuery);
+
+    if (checkDangDayResult.length > 0) {
+      return res.status(400).json({ error: 'Giảng viên đang dạy một lớp tín chỉ còn hoạt động' });
+    }
+
     // Cập nhật trạng thái nghỉ cho giảng viên
-    const updateGiangVienQuery = `UPDATE dbo.GiangVien SET TrangThaiNghi = 1 WHERE MaGV = '${MaGV}'`;
+    const updateGiangVienQuery = `UPDATE dbo.GiangVien SET Active = 0 WHERE MaGV = '${MaGV}'`;
     await pool.executeQuery(updateGiangVienQuery);
 
     // Cập nhật trạng thái Active = false trong bảng TaiKhoan
@@ -154,11 +167,80 @@ let choGiangVienNghi = async (req, res) => {
   }
 };
 
+let dieuChinhBuoiCoTheDay = async (req, res) => {
+  const { MaGV, MaTGBs } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Lấy danh sách các buổi giảng viên có thể dạy hiện tại
+    const getBuoiCoTheDayQuery = `SELECT MaTGB FROM BuoiCoTheDay WHERE MaGV = '${MaGV}'`;
+    const buoiCoTheDayResult = await pool.executeQuery(getBuoiCoTheDayQuery);
+    const existingBuoiCoTheDay = buoiCoTheDayResult.map((buoi) => buoi.MaTGB);
+
+    // Tìm các buổi cần thêm và xóa
+    const buoiThem = MaTGBs.filter((maTGB) => !existingBuoiCoTheDay.includes(maTGB));
+    const buoiXoa = existingBuoiCoTheDay.filter((maTGB) => !MaTGBs.includes(maTGB));
+
+    
+
+    // Thêm các buổi mới vào bảng BuoiCoTheDay
+    if (buoiThem.length > 0) {
+      const insertBuoiCoTheDayQuery = `INSERT INTO BuoiCoTheDay (MaGV, MaTGB) VALUES `;
+      const values = buoiThem.map((maTGB) => `('${MaGV}', ${maTGB})`).join(', ');
+      await pool.executeQuery(insertBuoiCoTheDayQuery + values);
+    }
+
+    // Xóa các buổi không còn trong danh sách MaTGBs
+    if (buoiXoa.length > 0) {
+      const deleteBuoiCoTheDayQuery = `DELETE FROM BuoiCoTheDay WHERE MaGV = '${MaGV}' AND MaTGB IN (${buoiXoa.join(', ')})`;
+      await pool.executeQuery(deleteBuoiCoTheDayQuery);
+    }
+
+    res.status(200).json({ success: true, message: 'Điều chỉnh buổi có thể dạy thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let hienThiBuoiCoTheDay = async (req, res) => {
+  const { MaGV } = req.params;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Lấy danh sách các buổi giảng viên có thể dạy
+    const getBuoiCoTheDayQuery = `SELECT MaTGB FROM BuoiCoTheDay WHERE MaGV = '${MaGV}'`;
+    const buoiCoTheDayResult = await pool.executeQuery(getBuoiCoTheDayQuery);
+    const buoiCoTheDayList = buoiCoTheDayResult.map((buoi) => buoi.MaTGB);
+
+    res.status(200).json({ success: true, buoiCoTheDay: buoiCoTheDayList });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllGiangVien,
   hienGiangVien,
   themGiangVien,
   suaGiangVien,
   xoaGiangVien,
-  choGiangVienNghi
+  choGiangVienNghi,
+  dieuChinhBuoiCoTheDay,
+  hienThiBuoiCoTheDay
 };

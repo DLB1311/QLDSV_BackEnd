@@ -113,10 +113,18 @@ let themMonHoc = async (req, res) => {
         return res.status(404).json({ error: 'Không tìm thấy môn học' });
       }
   
-      // Xóa môn học
-      const deleteMonHocQuery = `DELETE FROM dbo.MonHoc WHERE MaMH = '${MaMH}'`;
+      // Kiểm tra xem môn học có liên quan đến lớp tín chỉ đang trong thời gian học hay không
+      const checkLopTinChiQuery = `SELECT * FROM dbo.LopTinChi WHERE MaMH = '${MaMH}' AND GETDATE() BETWEEN NgayBD AND NgayKT`;
+      const checkLopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
   
-      await pool.executeQuery(deleteMonHocQuery);
+      if (checkLopTinChiResult.length > 0) {
+        return res.status(400).json({ error: 'Môn học đang trong thời gian học, không thể xóa mềm' });
+      }
+  
+      // Cập nhật trạng thái môn học thành không hoạt động (Active = 0)
+      const updateMonHocQuery = `UPDATE dbo.MonHoc SET Active = 0 WHERE MaMH = '${MaMH}'`;
+  
+      await pool.executeQuery(updateMonHocQuery);
   
       res.status(200).json({ success: true, message: 'Xóa môn học thành công', MaMH });
     } catch (error) {

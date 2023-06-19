@@ -13,4 +13,8 @@ Router.delete('/xoaGiangVien/:Magv', auth.verifyTokenQuanLi,giangVienController.
 
 Router.put('/choGiangVienNghi/:Magv', auth.verifyTokenQuanLi,giangVienController.choGiangVienNghi);
 
+Router.post('/dieuChinhBuoiCoTheDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhBuoiCoTheDay);
+
+Router.get('/hienThiBuoiCoTheDay/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBuoiCoTheDay);
+
 module.exports = Router 

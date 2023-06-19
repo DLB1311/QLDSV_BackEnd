@@ -179,8 +179,19 @@ let choSinhVienNghi = async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
     }
 
+    // Kiểm tra xem sinh viên đang học lớp tín chỉ nào và lớp tín chỉ đó vẫn đang trong quá trình dạy
+    const checkLopTinChiQuery = `SELECT ltc.* FROM dbo.LopTinChi ltc
+                                INNER JOIN dbo.DangKi dk ON ltc.MaLTC = dk.MaLTC
+                                INNER JOIN dbo.MonHoc mh ON ltc.MaMH = mh.MaMH
+                                WHERE dk.MaSV = '${MaSV}' AND ltc.Active = 1 AND GETDATE() BETWEEN ltc.NgayBD AND ltc.NgayKT`;
+    const checkLopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+
+    if (checkLopTinChiResult.length > 0) {
+      return res.status(400).json({ error: 'Sinh viên đang học lớp tín chỉ đang trong quá trình dạy, không thể cho nghỉ' });
+    }
+
     // Cập nhật trạng thái nghỉ cho sinh viên
-    const updateSinhVienQuery = `UPDATE dbo.SinhVien SET TrangThaiNghi = 1 WHERE MaSV = '${MaSV}'`;
+    const updateSinhVienQuery = `UPDATE dbo.SinhVien SET Active = 0 WHERE MaSV = '${MaSV}'`;
     await pool.executeQuery(updateSinhVienQuery);
 
     // Cập nhật trạng thái Active = false trong bảng TaiKhoan
@@ -193,6 +204,7 @@ let choSinhVienNghi = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 module.exports = {
   getAllSinhVien,
   hienSinhVien,
