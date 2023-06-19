@@ -258,6 +258,36 @@ let hienThiDiemTheoHocKi = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+let hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau = async (req, res) => {
+  const { MaSV } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Lấy danh sách các lớp tín chỉ mà sinh viên đã đăng kí nhưng chưa có điểm và chưa đến thời gian bắt đầu học
+    const getLopChuaCoDiemVaChuaDenThoiGianQuery = `
+      SELECT ltc.MaLTC, mh.TenMH, ltc.NgayBD
+      FROM LopTinChi ltc
+      INNER JOIN MonHoc mh ON ltc.MaMH = mh.MaMH
+      LEFT JOIN DangKi dk ON ltc.MaLTC = dk.MaLTC AND dk.MaSV = '${MaSV}'
+      WHERE (dk.MaLTC IS NULL OR (dk.DiemCC IS NULL AND dk.DiemGK IS NULL AND dk.DiemCK IS NULL))
+        AND ltc.NgayBD > GETDATE()
+    `;
+    const lopChuaCoDiemVaChuaDenThoiGianResult = await pool.executeQuery(getLopChuaCoDiemVaChuaDenThoiGianQuery);
+
+    res.status(200).json({ success: true, lopChuaCoDiemVaChuaDenThoiGian: lopChuaCoDiemVaChuaDenThoiGianResult });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 let dieuChinhDangKiMonHoc = async (req, res) => {
   const { MaSV, MaLTCs } = req.body;
@@ -310,18 +340,37 @@ let dieuChinhDangKiMonHoc = async (req, res) => {
         return res.status(400).json({ error: `Lớp tín chỉ ${trungLichMaLTCs.join(', ')} trùng lịch với các lớp tín chỉ đã đăng kí` });
       }
 
+      // Kiểm tra điều kiện lớp tín chỉ chưa bắt đầu học
+      const checkLopChuaBatDauQuery = `
+        SELECT MaLTC
+        FROM LopTinChi
+        WHERE MaLTC IN ('${lopThem.join("', '")}')
+        AND NgayBD > CONVERT(DATE, GETDATE())
+      `;
+      const lopChuaBatDauResult = await pool.executeQuery(checkLopChuaBatDauQuery);
+
+      if (lopChuaBatDauResult.length == 0) {
+        const lopChuaBatDauMaLTCs = lopChuaBatDauResult.map((lopChuaBatDau) => lopChuaBatDau.MaLTC);
+        return res.status(400).json({ error: `Lớp tín chỉ ${lopChuaBatDauMaLTCs.join(', ')} đã bắt đầu học` });
+      }
+
       const insertDangKiQuery = `INSERT INTO DangKi (MaLTC, MaSV) VALUES `;
       const values = lopThem.map((maLTC) => `('${maLTC}', '${MaSV}')`).join(', ');
       await pool.executeQuery(insertDangKiQuery + values);
     }
 
-    // Xóa các lớp tín chỉ không còn trong danh sách MaLTCs (nếu chưa có điểm)
+    // Xóa các lớp tín chỉ không còn trong danh sách MaLTCs (nếu chưa có điểm và chưa bắt đầu học)
     if (lopBo.length > 0) {
       const deleteDangKiQuery = `
         DELETE FROM DangKi
         WHERE MaSV = '${MaSV}'
         AND MaLTC IN ('${lopBo.join("', '")}')
         AND (DiemCC IS NULL AND DiemGK IS NULL AND DiemCK IS NULL)
+        AND MaLTC NOT IN (
+          SELECT ltc.MaLTC
+          FROM LopTinChi ltc
+          WHERE ltc.NgayBD < CONVERT(DATE, GETDATE())
+        )
       `;
       await pool.executeQuery(deleteDangKiQuery);
     }
@@ -342,5 +391,6 @@ module.exports = {
   xoaSinhVien,
   choSinhVienNghi,
   hienThiDiemTheoHocKi,
+  hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau,
   dieuChinhDangKiMonHoc
 };

@@ -15,6 +15,7 @@ Router.put('/choSinhVienNghi/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.
 
 Router.get('/hienThiDiemTheoHocKi', sinhVienController.hienThiDiemTheoHocKi);
 
+Router.get('/hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau', sinhVienController.hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau);
 Router.post('/dieuChinhDangKiMonHoc', auth.verifyToken ,sinhVienController.dieuChinhDangKiMonHoc);
 
 module.exports = Router 
