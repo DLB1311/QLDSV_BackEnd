@@ -2,6 +2,7 @@
 const routerSinhVien = require('./apiSinhVien')
 const routerTaiKhoan = require('./apiTaikhoan')
 const routerGiangVien = require('./apiGiangVien')
+const routerMonHoc = require('./apiMonHoc')
 
 function initAPIRoute(app) {
 
@@ -11,7 +12,7 @@ function initAPIRoute(app) {
  
     app.use('/api/v1/giangvien', routerGiangVien)
 
-    // app.use('/api/v1/order', routerOrder)
+    app.use('/api/v1/monhoc', routerMonHoc)
 }
 
 

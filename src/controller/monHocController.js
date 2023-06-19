@@ -132,11 +132,142 @@ let themMonHoc = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+
+  let hienThiDanhSachLopTinChi = async (req, res) => {
+    try {
+      // Lấy danh sách toàn bộ lớp tín chỉ
+      const getDanhSachLopTCQuery = `SELECT * FROM LopTinChi`;
+      const danhSachLopTCResult = await pool.executeQuery(getDanhSachLopTCQuery);
   
+      res.status(200).json({ success: true, danhSachLopTC: danhSachLopTCResult });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let chinhSuaLopTinChi = async (req, res) => {
+    const { MaLTC, NamHoc, HocKi, SLToiDa, NgayBD, NgayKT } = req.body;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+      if (lopTinChiResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Cập nhật thông tin của lớp tín chỉ
+      const updateLopTinChiQuery = `
+        UPDATE LopTinChi
+        SET NamHoc = '${NamHoc}', HocKi = '${HocKi}', SLToiDa = ${SLToiDa}, NgayBD = '${NgayBD}', NgayKT = '${NgayKT}'
+        WHERE MaLTC = '${MaLTC}'
+      `;
+      await pool.executeQuery(updateLopTinChiQuery);
+  
+      res.status(200).json({ success: true, message: 'Chỉnh sửa lớp tín chỉ thành công' });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let xoaLopTinChi = async (req, res) => {
+    const { MaLTC } = req.body;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ đã được đăng kí hay chưa
+      const checkDangKiQuery = `SELECT * FROM DangKi WHERE MaLTC = '${MaLTC}'`;
+      const dangKiResult = await pool.executeQuery(checkDangKiQuery);
+  
+      if (dangKiResult.length > 0) {
+        return res.status(400).json({ error: 'Không thể xóa lớp tín chỉ đã được đăng kí' });
+      }
+  
+      // Cập nhật cờ active của lớp tín chỉ thành 0 (xóa mềm)
+      const xoaMemLopTinChiQuery = `
+        UPDATE LopTinChi
+        SET Active = 0
+        WHERE MaLTC = '${MaLTC}'
+      `;
+      await pool.executeQuery(xoaMemLopTinChiQuery);
+  
+      res.status(200).json({ success: true, message: 'Xóa mềm lớp tín chỉ thành công' });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+
+  let hienThiDanhSachDangKi = async (req, res) => {
+    const { MaLTC } = req.params;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTCQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTCResult = await pool.executeQuery(checkLopTCQuery);
+  
+      if (lopTCResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Lấy danh sách đăng kí của lớp tín chỉ
+      const getDanhSachDangKiQuery = `SELECT * FROM DangKi WHERE MaLTC = '${MaLTC}'`;
+      const danhSachDangKiResult = await pool.executeQuery(getDanhSachDangKiQuery);
+  
+      res.status(200).json({ success: true, danhSachDangKi: danhSachDangKiResult });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let chinhSuaDiemSinhVien = async (req, res) => {
+    const { MaSV, MaLTC, DiemCC, DiemGK, DiemCK } = req.body;
+  
+    try {
+      // Kiểm tra xem sinh viên có tồn tại hay không
+      const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+      const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+  
+      if (sinhVienResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+      }
+  
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+      if (lopTinChiResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Cập nhật điểm của sinh viên
+      const updateDiemQuery = `
+        UPDATE DangKi
+        SET DiemCC = ${DiemCC}, DiemGK = ${DiemGK}, DiemCK = ${DiemCK}
+        WHERE MaSV = '${MaSV}' AND MaLTC = '${MaLTC}'
+      `;
+      await pool.executeQuery(updateDiemQuery);
+  
+      res.status(200).json({ success: true, message: 'Chỉnh sửa điểm thành công' });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
   module.exports = {
     getAllMonHoc,
     layMonHoc,
     themMonHoc,
     suaMonHoc,  
     xoaMonHoc,
+    hienThiDanhSachLopTinChi,
+    chinhSuaLopTinChi,
+    xoaLopTinChi,
+    hienThiDanhSachDangKi,
+    chinhSuaDiemSinhVien
   };

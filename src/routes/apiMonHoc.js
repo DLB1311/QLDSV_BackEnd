@@ -12,4 +12,11 @@ Router.put('/suaMonHoc/:MaMH', auth.verifyTokenQuanLi , monHocController.suaMonH
 Router.put('/xoaMonHoc/:MaMH', auth.verifyTokenQuanLi , monHocController.xoaMonHoc);
 
 
+Router.get('/hienThiDanhSachLopTinChi', auth.verifyTokenQuanLi , monHocController.hienThiDanhSachLopTinChi);
+Router.put('/chinhSuaLopTinChi', auth.verifyTokenQuanLi , monHocController.chinhSuaLopTinChi);
+Router.put('/xoaLopTinChi', auth.verifyTokenQuanLi , monHocController.xoaLopTinChi);
+
+Router.get('/hienThiDanhSachDangKi/:MaLTC', auth.verifyTokenQuanLi , monHocController.hienThiDanhSachDangKi);
+Router.put('/chinhSuaDiemSinhVien', auth.verifyTokenQuanLi , monHocController.chinhSuaDiemSinhVien);
+
 module.exports = Router 
