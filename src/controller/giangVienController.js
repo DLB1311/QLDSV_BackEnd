@@ -167,6 +167,22 @@ let choGiangVienNghi = async (req, res) => {
   }
 };
 
+let hienThiBangThoiGianBieu = async (req, res) => {
+  try {
+    // Câu truy vấn SQL để lấy thông tin tất cả các buổi trong bảng ThoiGianBieu
+    const query = `SELECT * FROM ThoiGianBieu`;
+
+    // Thực hiện truy vấn
+    const result = await pool.executeQuery(query);
+
+    // Trả về kết quả
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 let dieuChinhBuoiCoTheDay = async (req, res) => {
   const { MaGV, MaTGBs } = req.body;
 
@@ -233,6 +249,39 @@ let hienThiBuoiCoTheDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+let hienThiBangPhanCongTheoGiangVien = async (req, res) => {
+  const { MaGV } = req.params;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Câu truy vấn SQL để lấy thông tin phân công của giảng viên
+    const query = `
+      SELECT pc.MaPhanCong, gv.MaGV, gv.TenGV, mh.MaMH, mh.TenMH, pc.MaLop, pc.NgayPhanCong
+      FROM PhanCong pc
+      INNER JOIN GiangVien gv ON pc.MaGV = gv.MaGV
+      INNER JOIN MonHoc mh ON pc.MaMH = mh.MaMH
+      WHERE gv.MaGV = '${MaGV}'
+    `;
+
+    // Thực hiện truy vấn
+    const result = await pool.executeQuery(query);
+
+    // Trả về kết quả
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 let phanCongGiangVien = async (req, res) => {
   const { MaGV, MaLTC } = req.body;
 
@@ -337,8 +386,13 @@ module.exports = {
   suaGiangVien,
   xoaGiangVien,
   choGiangVienNghi,
+
+  hienThiBangThoiGianBieu,
   dieuChinhBuoiCoTheDay,
+
   hienThiBuoiCoTheDay,
+  hienThiBangPhanCongTheoGiangVien,
+
   phanCongGiangVien,
   dieuChinhKhaNangDay
 };

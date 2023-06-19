@@ -205,6 +205,135 @@ let choSinhVienNghi = async (req, res) => {
   }
 };
 
+let hienThiDiemTheoHocKi = async (req, res) => {
+  const { MaSV } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Lấy danh sách các học kỳ, điểm, số tín chỉ đã đạt và số tín chỉ đã rớt của sinh viên
+    const getDiemQuery = `
+      SELECT LopTinChi.HocKi, MonHoc.TenMH AS TenMonHoc, DangKi.DiemCC, DangKi.DiemGK, DangKi.DiemCK,
+        (DangKi.DiemCC * MonHoc.HeSoCC + DangKi.DiemGK * MonHoc.HeSoGK + DangKi.DiemCK * MonHoc.HeSoCK) / (MonHoc.HeSoCC + MonHoc.HeSoGK + MonHoc.HeSoCK) AS DiemTB,
+        CASE WHEN (DangKi.DiemCC * MonHoc.HeSoCC + DangKi.DiemGK * MonHoc.HeSoGK + DangKi.DiemCK * MonHoc.HeSoCK) / (MonHoc.HeSoCC + MonHoc.HeSoGK + MonHoc.HeSoCK) >= 4 THEN MonHoc.SoTinChi ELSE 0 END AS TinChiDat,
+        CASE WHEN (DangKi.DiemCC * MonHoc.HeSoCC + DangKi.DiemGK * MonHoc.HeSoGK + DangKi.DiemCK * MonHoc.HeSoCK) / (MonHoc.HeSoCC + MonHoc.HeSoGK + MonHoc.HeSoCK) < 4 THEN MonHoc.SoTinChi ELSE 0 END AS TinChiRot
+      FROM LopTinChi
+      LEFT JOIN DangKi ON LopTinChi.MaLTC = DangKi.MaLTC
+      LEFT JOIN MonHoc ON LopTinChi.MaMH = MonHoc.MaMH
+      WHERE DangKi.MaSV = '${MaSV}'
+      ORDER BY LopTinChi.HocKi ASC, MonHoc.TenMH ASC
+    `;
+    const diemResult = await pool.executeQuery(getDiemQuery);
+
+    // Gom nhóm theo HocKi
+    const hocKiData = {};
+    diemResult.forEach((diem) => {
+      const { HocKi, TenMonHoc, DiemCC, DiemGK, DiemCK, DiemTB, TinChiDat, TinChiRot } = diem;
+      if (!hocKiData[HocKi]) {
+        hocKiData[HocKi] = {
+          Mon: []
+        };
+      }
+      hocKiData[HocKi].Mon.push({
+        TenMonHoc,
+        DiemCC,
+        DiemGK,
+        DiemCK,
+        DiemTB
+      });
+      hocKiData[HocKi].SoTinChiDat = (hocKiData[HocKi].SoTinChiDat || 0) + TinChiDat;
+      hocKiData[HocKi].SoTinChiRot = (hocKiData[HocKi].SoTinChiRot || 0) + TinChiRot;
+    });
+
+    // Trả về kết quả dưới dạng JSON
+    res.status(200).json({ HocKi: hocKiData });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let dieuChinhDangKiMonHoc = async (req, res) => {
+  const { MaSV, MaLTCs } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Lấy danh sách các lớp tín chỉ sinh viên đã đăng kí
+    const getDangKiQuery = `SELECT MaLTC, DiemCC, DiemGK, DiemCK FROM DangKi WHERE MaSV = '${MaSV}'`;
+    const dangKiResult = await pool.executeQuery(getDangKiQuery);
+    const existingDangKi = dangKiResult.map((dangKi) => dangKi.MaLTC);
+
+    // Tìm các lớp tín chỉ cần thêm và bỏ
+    const lopThem = MaLTCs.filter((maLTC) => !existingDangKi.includes(maLTC));
+    const lopBo = existingDangKi.filter((maLTC) => !MaLTCs.includes(maLTC));
+
+    // Thêm các lớp tín chỉ mới vào bảng DangKi
+    if (lopThem.length > 0) {
+      // Kiểm tra điều kiện trùng lịch cho các lớp tín chỉ mới
+      const checkTrungLichQuery = `
+        SELECT DISTINCT lh.MaLTC
+        FROM LichHoc lh
+        INNER JOIN LopTinChi ltc ON ltc.MaLTC = lh.MaLTC
+        WHERE lh.MaLTC IN ('${lopThem.join("', '")}')
+        AND lh.MaLTC NOT IN (
+          SELECT MaLTC
+          FROM DangKi
+          WHERE MaSV = '${MaSV}'
+        )
+        AND lh.MaTGB IN (
+          SELECT MaTGB
+          FROM LichHoc
+          WHERE MaLTC IN (
+            SELECT MaLTC
+            FROM DangKi
+            WHERE MaSV = '${MaSV}'
+          )
+        )
+      `;
+      const trungLichResult = await pool.executeQuery(checkTrungLichQuery);
+
+      if (trungLichResult.length > 0) {
+        const trungLichMaLTCs = trungLichResult.map((trungLich) => trungLich.MaLTC);
+        return res.status(400).json({ error: `Lớp tín chỉ ${trungLichMaLTCs.join(', ')} trùng lịch với các lớp tín chỉ đã đăng kí` });
+      }
+
+      const insertDangKiQuery = `INSERT INTO DangKi (MaLTC, MaSV) VALUES `;
+      const values = lopThem.map((maLTC) => `('${maLTC}', '${MaSV}')`).join(', ');
+      await pool.executeQuery(insertDangKiQuery + values);
+    }
+
+    // Xóa các lớp tín chỉ không còn trong danh sách MaLTCs (nếu chưa có điểm)
+    if (lopBo.length > 0) {
+      const deleteDangKiQuery = `
+        DELETE FROM DangKi
+        WHERE MaSV = '${MaSV}'
+        AND MaLTC IN ('${lopBo.join("', '")}')
+        AND (DiemCC IS NULL AND DiemGK IS NULL AND DiemCK IS NULL)
+      `;
+      await pool.executeQuery(deleteDangKiQuery);
+    }
+
+    res.status(200).json({ success: true, message: 'Điều chỉnh đăng kí môn học thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
 module.exports = {
   getAllSinhVien,
   hienSinhVien,
@@ -212,4 +341,6 @@ module.exports = {
   suaSinhVien,
   xoaSinhVien,
   choSinhVienNghi,
+  hienThiDiemTheoHocKi,
+  dieuChinhDangKiMonHoc
 };

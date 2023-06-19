@@ -13,10 +13,12 @@ Router.delete('/xoaGiangVien/:Magv', auth.verifyTokenQuanLi,giangVienController.
 
 Router.put('/choGiangVienNghi/:Magv', auth.verifyTokenQuanLi,giangVienController.choGiangVienNghi);
 
+Router.get('/hienThiBangThoiGianBieu', auth.verifyTokenQuanLi,giangVienController.hienThiBangThoiGianBieu);
 Router.post('/dieuChinhBuoiCoTheDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhBuoiCoTheDay);
 
 Router.get('/hienThiBuoiCoTheDay/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBuoiCoTheDay);
 
+Router.get('/hienThiBangPhanCongTheoGiangVien/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBangPhanCongTheoGiangVien);
 Router.post('/phanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
 
 Router.post('/dieuChinhKhaNangDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhKhaNangDay);

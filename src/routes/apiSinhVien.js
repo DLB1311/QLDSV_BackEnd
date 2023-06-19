@@ -13,5 +13,8 @@ Router.put('/suasinhvien/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.suaS
 Router.delete('/xoaSinhVien/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.xoaSinhVien);
 Router.put('/choSinhVienNghi/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.choSinhVienNghi);
 
+Router.get('/hienThiDiemTheoHocKi', sinhVienController.hienThiDiemTheoHocKi);
+
+Router.post('/dieuChinhDangKiMonHoc', auth.verifyToken ,sinhVienController.dieuChinhDangKiMonHoc);
 
 module.exports = Router 
