@@ -258,7 +258,46 @@ let themMonHoc = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   };
-
+  let dieuChinhLichHoc = async (req, res) => {
+    const { MaLTC, MaTGBs, MaPhongHoc } = req.body;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+      if (lopTinChiResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Lấy danh sách các thời gian biểu hiện tại của lớp tín chỉ
+      const getLichHocQuery = `SELECT MaTGB FROM LichHoc WHERE MaLTC = '${MaLTC}'`;
+      const lichHocResult = await pool.executeQuery(getLichHocQuery);
+      const existingLichHoc = lichHocResult.map((lich) => lich.MaTGB);
+  
+      // Tìm các thời gian biểu cần thêm và xóa
+      const tgbThem = MaTGBs.filter((maTGB) => !existingLichHoc.includes(maTGB));
+      const tgbXoa = existingLichHoc.filter((maTGB) => !MaTGBs.includes(maTGB));
+  
+      // Thêm các thời gian biểu mới vào bảng LichHoc
+      if (tgbThem.length > 0) {
+        const insertLichHocQuery = `INSERT INTO LichHoc (MaLTC, MaTGB, MaPhongHoc) VALUES `;
+        const values = tgbThem.map((maTGB) => `('${MaLTC}', ${maTGB}, ${MaPhongHoc})`).join(', ');
+        await pool.executeQuery(insertLichHocQuery + values);
+      }
+  
+      // Xóa các thời gian biểu không còn trong danh sách MaTGBs
+      if (tgbXoa.length > 0) {
+        const deleteLichHocQuery = `DELETE FROM LichHoc WHERE MaLTC = '${MaLTC}' AND MaTGB IN (${tgbXoa.join(', ')})`;
+        await pool.executeQuery(deleteLichHocQuery);
+      }
+  
+      res.status(200).json({ success: true, message: 'Điều chỉnh lịch học thành công' });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
   module.exports = {
     getAllMonHoc,
     layMonHoc,
@@ -269,5 +308,6 @@ let themMonHoc = async (req, res) => {
     chinhSuaLopTinChi,
     xoaLopTinChi,
     hienThiDanhSachDangKi,
-    chinhSuaDiemSinhVien
+    chinhSuaDiemSinhVien,
+    dieuChinhLichHoc
   };

@@ -19,4 +19,6 @@ Router.put('/xoaLopTinChi', auth.verifyTokenQuanLi , monHocController.xoaLopTinC
 Router.get('/hienThiDanhSachDangKi/:MaLTC', auth.verifyTokenQuanLi , monHocController.hienThiDanhSachDangKi);
 Router.put('/chinhSuaDiemSinhVien', auth.verifyTokenQuanLi , monHocController.chinhSuaDiemSinhVien);
 
+Router.post('/dieuChinhLichHoc', auth.verifyTokenQuanLi , monHocController.dieuChinhLichHoc);
+
 module.exports = Router 

@@ -233,6 +233,102 @@ let hienThiBuoiCoTheDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+let phanCongGiangVien = async (req, res) => {
+  const { MaGV, MaLTC } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có khả năng dạy môn đó hay không
+    const checkDayQuery = `
+      SELECT *
+      FROM Day d
+      INNER JOIN MonHoc mh ON d.MaMH = mh.MaMH
+      WHERE d.MaGV = '${MaGV}' AND mh.Active = 1;
+    `;
+    const dayResult = await pool.executeQuery(checkDayQuery);
+    if (dayResult.length === 0) {
+      return res.status(400).json({ error: 'Giảng viên không có khả năng dạy môn này' });
+    }
+
+    // Kiểm tra xem giảng viên có thời gian để dạy lớp tín chỉ đó hay không
+    const checkLichHocQuery = `
+      SELECT *
+      FROM LichHoc lh
+      WHERE lh.MaLTC = '${MaLTC}';
+    `;
+    const lichHocResult = await pool.executeQuery(checkLichHocQuery);
+    if (lichHocResult.length === 0) {
+      return res.status(400).json({ error: 'Lớp tín chỉ không có lịch học' });
+    }
+
+    // Kiểm tra xem giảng viên có buổi trống để dạy lớp tín chỉ đó hay không
+    const checkBuoiDayQuery = `
+      SELECT *
+      FROM BuoiCoTheDay b
+      WHERE b.MaGV = '${MaGV}' AND b.MaTGB IN (
+        SELECT lh.MaTGB
+        FROM LichHoc lh
+        WHERE lh.MaLTC = '${MaLTC}'
+      );
+    `;
+    const buoiDayResult = await pool.executeQuery(checkBuoiDayQuery);
+    if (buoiDayResult.length === 0) {
+      return res.status(400).json({ error: 'Giảng viên không có thời gian để dạy lớp tín chỉ này' });
+    }
+
+    // Tiến hành phân công giảng viên
+    const insertPhanCongQuery = `
+      INSERT INTO PhanCong (MaLTC, MaGV)
+      VALUES ('${MaLTC}', '${MaGV}');
+    `;
+    await pool.executeQuery(insertPhanCongQuery);
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let dieuChinhKhaNangDay = async (req, res) => {
+  const { MaGV, MaMHs } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Lấy danh sách các môn học giảng viên có thể dạy hiện tại
+    const getKhaNangDayQuery = `SELECT MaMH FROM Day WHERE MaGV = '${MaGV}'`;
+    const khaNangDayResult = await pool.executeQuery(getKhaNangDayQuery);
+    const existingKhaNangDay = khaNangDayResult.map((khaNang) => khaNang.MaMH);
+
+    // Tìm các môn cần thêm và xóa
+    const monThem = MaMHs.filter((maMH) => !existingKhaNangDay.includes(maMH));
+    const monXoa = existingKhaNangDay.filter((maMH) => !MaMHs.includes(maMH));
+
+    // Thêm các môn mới vào bảng Day
+    if (monThem.length > 0) {
+      const insertKhaNangDayQuery = `INSERT INTO Day (MaGV, MaMH) VALUES `;
+      const values = monThem.map((maMH) => `('${MaGV}', '${maMH}')`).join(', ');
+      await pool.executeQuery(insertKhaNangDayQuery + values);
+    }
+
+    // Xóa các môn không còn trong danh sách MaMHs
+    if (monXoa.length > 0) {
+      const deleteKhaNangDayQuery = `DELETE FROM Day WHERE MaGV = '${MaGV}' AND MaMH IN ('${monXoa.join("', '")}')`;
+      await pool.executeQuery(deleteKhaNangDayQuery);
+    }
+
+    res.status(200).json({ success: true, message: 'Điều chỉnh khả năng dạy thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 module.exports = {
   getAllGiangVien,
@@ -242,5 +338,7 @@ module.exports = {
   xoaGiangVien,
   choGiangVienNghi,
   dieuChinhBuoiCoTheDay,
-  hienThiBuoiCoTheDay
+  hienThiBuoiCoTheDay,
+  phanCongGiangVien,
+  dieuChinhKhaNangDay
 };

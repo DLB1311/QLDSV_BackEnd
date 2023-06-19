@@ -17,4 +17,8 @@ Router.post('/dieuChinhBuoiCoTheDay', auth.verifyTokenQuanLi,giangVienController
 
 Router.get('/hienThiBuoiCoTheDay/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBuoiCoTheDay);
 
+Router.post('/phanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
+
+Router.post('/dieuChinhKhaNangDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhKhaNangDay);
+
 module.exports = Router 
