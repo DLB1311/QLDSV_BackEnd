@@ -1,15 +1,16 @@
 const sql = require('mssql');
 
 const config = {
-  server: 'LAPTOP-4VJ6H73K',
+  server: 'localhost',
   user: 'sa',
-  password: '131101',
+  password: '<Sang_123456>',
   database: 'qldiem_KienTruc1',
   options: {
     encrypt: true,
     trustServerCertificate: true,
   },
 };
+
 
 class Database {
   constructor() {
@@ -49,8 +50,6 @@ class Database {
     }
   }
 }
-
-
 
 module.exports = Database;
 

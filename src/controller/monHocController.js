@@ -298,6 +298,82 @@ let themMonHoc = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+
+  let hienThiLichHoc = async (req, res) => {
+    const { MaLTC } = req.body;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+      if (lopTinChiResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Lấy danh sách các thời gian biểu hiện tại của lớp tín chỉ
+      const getLichHocQuery = `SELECT LH.MaTGB, PH.MaPhongHoc FROM LichHoc LH JOIN PhongHoc PH ON LH.MaPhongHoc = PH.MaPhongHoc WHERE LH.MaLTC = '${MaLTC}'`;
+      const lichHocResult = await pool.executeQuery(getLichHocQuery);
+  
+      const danhSachLichHoc = lichHocResult.map((lich) => ({
+        MaTGB: lich.MaTGB,
+        MaPhongHoc: lich.MaPhongHoc,
+      }));
+  
+      res.status(200).json({ success: true, danhSachLichHoc });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let themLichHoc = async (req, res) => {
+    const { MaLTC, MaTGB, MaPhongHoc } = req.body;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+      if (lopTinChiResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Thêm thời gian biểu mới vào bảng LichHoc
+      const insertLichHocQuery = `INSERT INTO LichHoc (MaLTC, MaTGB, MaPhongHoc) VALUES ('${MaLTC}', ${MaTGB}, '${MaPhongHoc}')`;
+      await pool.executeQuery(insertLichHocQuery);
+  
+      res.status(200).json({ success: true, message: 'Thêm lịch học thành công' });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let xoaLichHoc = async (req, res) => {
+    const { MaLTC, MaTGB, MaPhongHoc } = req.body;
+  
+    try {
+      // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+      const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+      const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+      if (lopTinChiResult.length === 0) {
+        return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+      }
+  
+      // Xóa thời gian biểu ra khỏi bảng LichHoc
+      const deleteLichHocQuery = `DELETE FROM LichHoc WHERE MaLTC = '${MaLTC}' AND MaTGB = ${MaTGB} AND MaPhongHoc = '${MaPhongHoc}'`;
+      await pool.executeQuery(deleteLichHocQuery);
+  
+      res.status(200).json({ success: true, message: 'Xóa lịch học thành công' });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+  
+
   module.exports = {
     getAllMonHoc,
     layMonHoc,
@@ -309,5 +385,8 @@ let themMonHoc = async (req, res) => {
     xoaLopTinChi,
     hienThiDanhSachDangKi,
     chinhSuaDiemSinhVien,
-    dieuChinhLichHoc
+    dieuChinhLichHoc, // đã fix
+    hienThiLichHoc,
+    themLichHoc,
+    xoaLichHoc
   };

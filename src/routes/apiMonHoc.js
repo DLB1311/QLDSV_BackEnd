@@ -3,7 +3,7 @@ const monHocController = require('../controller/monHocController');
 
 const auth = require("../middleware/auth");
 
-let Router = express.Router()
+const Router = express.Router();
 
 Router.get('/getallmonhoc', auth.verifyTokenQuanLi , monHocController.getAllMonHoc);
 Router.post('/layMonHoc/:MaMH', auth.verifyTokenQuanLi , monHocController.layMonHoc);
@@ -20,5 +20,8 @@ Router.get('/hienThiDanhSachDangKi/:MaLTC', auth.verifyTokenQuanLi , monHocContr
 Router.put('/chinhSuaDiemSinhVien', auth.verifyTokenQuanLi , monHocController.chinhSuaDiemSinhVien);
 
 Router.post('/dieuChinhLichHoc', auth.verifyTokenQuanLi , monHocController.dieuChinhLichHoc);
+Router.get('/hienThiLichHoc', auth.verifyTokenQuanLi, monHocController.hienThiLichHoc);
+Router.post('/themLichHoc', auth.verifyTokenQuanLi, monHocController.themLichHoc);
+Router.delete('/xoaLichHoc', auth.verifyTokenQuanLi, monHocController.xoaLichHoc);
 
-module.exports = Router 
+module.exports = Router;

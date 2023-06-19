@@ -17,5 +17,11 @@ Router.get('/hienThiDiemTheoHocKi', sinhVienController.hienThiDiemTheoHocKi);
 
 Router.get('/hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau', sinhVienController.hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau);
 Router.post('/dieuChinhDangKiMonHoc', auth.verifyToken ,sinhVienController.dieuChinhDangKiMonHoc);
+Router.post('/hienThiLTCsDaDangKi/:MaSV', auth.verifyToken ,sinhVienController.hienThiLTCsDaDangKi);
+Router.post('/dangKiLopTinChi', auth.verifyToken ,sinhVienController.dangKiLopTinChi);
+Router.post('/dangKi1LopTinChi', auth.verifyToken ,sinhVienController.dangKi1LopTinChi);
+
+Router.post('/huyDangKiLopTinChi', auth.verifyToken ,sinhVienController.huyDangKiLopTinChi);
+Router.post('/huyDangKi1LopTinChi', auth.verifyToken ,sinhVienController.huyDangKi1LopTinChi);
 
 module.exports = Router 

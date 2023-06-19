@@ -1,0 +1,15 @@
+const express = require('express');
+const lopTinChiController = require('../controller/lopTinChiController');
+
+
+const auth = require("../middleware/auth");
+
+let router = express.Router();
+
+router.get('/getallloptinchi',auth.verifyTokenQuanLi, lopTinChiController.getAllLopTinChi);
+router.get('/getloptinchi/:MaLTC',auth.verifyTokenQuanLi, lopTinChiController.layLopTinChi);
+router.post('/themloptinchi', auth.verifyTokenQuanLi, lopTinChiController.themLopTinChi);
+router.put('/sualoptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.suaLopTinChi);
+router.delete('/xoaloptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.xoaLopTinChi);
+
+module.exports = router;

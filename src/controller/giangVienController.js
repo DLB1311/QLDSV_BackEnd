@@ -228,6 +228,7 @@ let dieuChinhBuoiCoTheDay = async (req, res) => {
 
 let hienThiBuoiCoTheDay = async (req, res) => {
   const { MaGV } = req.params;
+  console.log(MaGV);
 
   try {
     // Kiểm tra xem giảng viên có tồn tại hay không
@@ -249,6 +250,73 @@ let hienThiBuoiCoTheDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+let themBuoiCoTheDay = async (req, res) => {
+  const { MaGV, MaTGB } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Kiểm tra xem buổi đã tồn tại trong bảng BuoiCoTheDay chưa
+    const checkBuoiCoTheDayQuery = `SELECT * FROM BuoiCoTheDay WHERE MaGV = '${MaGV}' AND MaTGB = '${MaTGB}'`;
+    const buoiCoTheDayResult = await pool.executeQuery(checkBuoiCoTheDayQuery);
+
+    if (buoiCoTheDayResult.length > 0) {
+      return res.status(400).json({ error: 'Buổi đã tồn tại trong danh sách có thể dạy' });
+    }
+
+    // Thêm buổi mới vào bảng BuoiCoTheDay
+    const insertBuoiCoTheDayQuery = `INSERT INTO BuoiCoTheDay (MaGV, MaTGB) VALUES ('${MaGV}', '${MaTGB}')`;
+    await pool.executeQuery(insertBuoiCoTheDayQuery);
+
+    res.status(200).json({ success: true, message: 'Thêm buổi có thể dạy thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+let xoaBuoiCoTheDay = async (req, res) => {
+  const { MaGV, MaTGB } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Kiểm tra xem buổi có tồn tại trong bảng BuoiCoTheDay hay không
+    const checkBuoiCoTheDayQuery = `SELECT * FROM BuoiCoTheDay WHERE MaGV = '${MaGV}' AND MaTGB = '${MaTGB}'`;
+    const buoiCoTheDayResult = await pool.executeQuery(checkBuoiCoTheDayQuery);
+
+    if (buoiCoTheDayResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy buổi có thể dạy' });
+    }
+
+    // Xóa buổi khỏi bảng BuoiCoTheDay
+    const deleteBuoiCoTheDayQuery = `DELETE FROM BuoiCoTheDay WHERE MaGV = '${MaGV}' AND MaTGB = '${MaTGB}'`;
+    await pool.executeQuery(deleteBuoiCoTheDayQuery);
+
+    res.status(200).json({ success: true, message: 'Xóa buổi có thể dạy thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
 
 let hienThiBangPhanCongTheoGiangVien = async (req, res) => {
   const { MaGV } = req.params;
@@ -378,6 +446,103 @@ let dieuChinhKhaNangDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+let hienThiKhaNangDay = async (req, res) => {
+  try {
+    const { MaGV } = req.body;
+
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Lấy danh sách các môn học giảng viên có thể dạy hiện tại
+    const getKhaNangDayQuery = `SELECT MaMH FROM Day WHERE MaGV = '${MaGV}'`;
+    const khaNangDayResult = await pool.executeQuery(getKhaNangDayQuery);
+    const khaNangDay = khaNangDayResult.map((khaNang) => khaNang.MaMH);
+
+    res.status(200).json({ success: true, khaNangDay });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+let themKhaNangDay = async (req, res) => {
+  const { MaGV, MaMH } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Kiểm tra xem môn học đã tồn tại hay chưa
+    const checkMonHocQuery = `SELECT * FROM MonHoc WHERE MaMH = '${MaMH}'`;
+    const monHocResult = await pool.executeQuery(checkMonHocQuery);
+
+    if (monHocResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy môn học' });
+    }
+
+    // Kiểm tra xem khả năng dạy đã tồn tại hay chưa
+    const checkKhaNangDayQuery = `SELECT * FROM Day WHERE MaGV = '${MaGV}' AND MaMH = '${MaMH}'`;
+    const khaNangDayResult = await pool.executeQuery(checkKhaNangDayQuery);
+
+    if (khaNangDayResult.length > 0) {
+      return res.status(400).json({ error: 'Khả năng dạy đã tồn tại' });
+    }
+
+    // Thêm khả năng dạy mới vào bảng Day
+    const insertKhaNangDayQuery = `INSERT INTO Day (MaGV, MaMH) VALUES ('${MaGV}', '${MaMH}')`;
+    await pool.executeQuery(insertKhaNangDayQuery);
+
+    res.status(200).json({ success: true, message: 'Thêm khả năng dạy thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let xoaKhaNangDay = async (req, res) => {
+  const { MaGV, MaMH } = req.body;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Kiểm tra xem môn học có tồn tại trong khả năng dạy hay không
+    const checkKhaNangDayQuery = `SELECT * FROM Day WHERE MaGV = '${MaGV}' AND MaMH = '${MaMH}'`;
+    const khaNangDayResult = await pool.executeQuery(checkKhaNangDayQuery);
+
+    if (khaNangDayResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy khả năng dạy' });
+    }
+
+    // Xoá môn học khỏi bảng Day
+    const deleteKhaNangDayQuery = `DELETE FROM Day WHERE MaGV = '${MaGV}' AND MaMH = '${MaMH}'`;
+    await pool.executeQuery(deleteKhaNangDayQuery);
+
+    res.status(200).json({ success: true, message: 'Xoá khả năng dạy thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
 
 module.exports = {
   getAllGiangVien,
@@ -388,11 +553,18 @@ module.exports = {
   choGiangVienNghi,
 
   hienThiBangThoiGianBieu,
-  dieuChinhBuoiCoTheDay,
+  
+  dieuChinhBuoiCoTheDay, //đã fix
 
   hienThiBuoiCoTheDay,
+  themBuoiCoTheDay,
+  xoaBuoiCoTheDay,
+
   hienThiBangPhanCongTheoGiangVien,
 
   phanCongGiangVien,
-  dieuChinhKhaNangDay
+  dieuChinhKhaNangDay, //đã fix
+  hienThiKhaNangDay,
+  themKhaNangDay,
+  xoaKhaNangDay
 };

@@ -382,6 +382,235 @@ let dieuChinhDangKiMonHoc = async (req, res) => {
   }
 };
 
+const hienThiLTCsDaDangKi = async (req, res) => {
+  const { MaSV } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Lấy danh sách các lớp tín chỉ sinh viên đã đăng kí
+    const getDangKiQuery = `SELECT MaLTC, DiemCC, DiemGK, DiemCK FROM DangKi WHERE MaSV = '${MaSV}'`;
+    const dangKiResult = await pool.executeQuery(getDangKiQuery);
+
+    res.status(200).json(dangKiResult);
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const dangKiLopTinChi = async (req, res) => {
+  const { MaSV, MaLTCs } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Kiểm tra điều kiện trùng lịch cho các lớp tín chỉ mới
+    const checkTrungLichQuery = `
+      SELECT DISTINCT lh.MaLTC
+      FROM LichHoc lh
+      INNER JOIN LopTinChi ltc ON ltc.MaLTC = lh.MaLTC
+      WHERE lh.MaLTC IN ('${MaLTCs.join("', '")}')
+      AND lh.MaLTC NOT IN (
+        SELECT MaLTC
+        FROM DangKi
+        WHERE MaSV = '${MaSV}'
+      )
+      AND lh.MaTGB IN (
+        SELECT MaTGB
+        FROM LichHoc
+        WHERE MaLTC IN (
+          SELECT MaLTC
+          FROM DangKi
+          WHERE MaSV = '${MaSV}'
+        )
+      )
+    `;
+    const trungLichResult = await pool.executeQuery(checkTrungLichQuery);
+
+    if (trungLichResult.length > 0) {
+      const trungLichMaLTCs = trungLichResult.map((trungLich) => trungLich.MaLTC);
+      return res.status(400).json({ error: `Lớp tín chỉ ${trungLichMaLTCs.join(', ')} trùng lịch với các lớp tín chỉ đã đăng kí` });
+    }
+
+    // Kiểm tra điều kiện lớp tín chỉ chưa bắt đầu học
+    const checkLopChuaBatDauQuery = `
+      SELECT MaLTC
+      FROM LopTinChi
+      WHERE MaLTC IN ('${MaLTCs.join("', '")}')
+      AND NgayBD > CONVERT(DATE, GETDATE())
+    `;
+    const lopChuaBatDauResult = await pool.executeQuery(checkLopChuaBatDauQuery);
+
+    if (lopChuaBatDauResult.length == 0) {
+      const lopChuaBatDauMaLTCs = lopChuaBatDauResult.map((lopChuaBatDau) => lopChuaBatDau.MaLTC);
+      return res.status(400).json({ error: `Lớp tín chỉ ${lopChuaBatDauMaLTCs.join(', ')} đã bắt đầu học` });
+    }
+
+    // Thêm các lớp tín chỉ mới vào bảng DangKi
+    const insertDangKiQuery = `INSERT INTO DangKi (MaLTC, MaSV) VALUES `;
+    const values = MaLTCs.map((maLTC) => `('${maLTC}', '${MaSV}')`).join(', ');
+    await pool.executeQuery(insertDangKiQuery + values);
+
+    res.status(200).json({ success: true, message: 'Đăng ký lớp tín chỉ thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const dangKi1LopTinChi = async (req, res) => {
+  const { MaSV, MaLTC } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Kiểm tra điều kiện trùng lịch cho lớp tín chỉ mới
+    const checkTrungLichQuery = `
+      SELECT DISTINCT lh.MaLTC
+      FROM LichHoc lh
+      INNER JOIN LopTinChi ltc ON ltc.MaLTC = lh.MaLTC
+      WHERE lh.MaLTC = '${MaLTC}'
+      AND lh.MaLTC NOT IN (
+        SELECT MaLTC
+        FROM DangKi
+        WHERE MaSV = '${MaSV}'
+      )
+      AND lh.MaTGB IN (
+        SELECT MaTGB
+        FROM LichHoc
+        WHERE MaLTC IN (
+          SELECT MaLTC
+          FROM DangKi
+          WHERE MaSV = '${MaSV}'
+        )
+      )
+    `;
+    const trungLichResult = await pool.executeQuery(checkTrungLichQuery);
+
+    if (trungLichResult.length > 0) {
+      const trungLichMaLTCs = trungLichResult.map((trungLich) => trungLich.MaLTC);
+      return res.status(400).json({ error: `Lớp tín chỉ ${trungLichMaLTCs.join(', ')} trùng lịch với các lớp tín chỉ đã đăng kí` });
+    }
+
+    // Kiểm tra điều kiện lớp tín chỉ chưa bắt đầu học
+    const checkLopChuaBatDauQuery = `
+      SELECT MaLTC
+      FROM LopTinChi
+      WHERE MaLTC = '${MaLTC}'
+      AND NgayBD > CONVERT(DATE, GETDATE())
+    `;
+    const lopChuaBatDauResult = await pool.executeQuery(checkLopChuaBatDauQuery);
+
+    if (lopChuaBatDauResult.length == 0) {
+      return res.status(400).json({ error: `Lớp tín chỉ ${MaLTC} đã bắt đầu học` });
+    }
+
+    // Thêm lớp tín chỉ mới vào bảng DangKi
+    const insertDangKiQuery = `INSERT INTO DangKi (MaLTC, MaSV) VALUES ('${MaLTC}', '${MaSV}')`;
+    await pool.executeQuery(insertDangKiQuery);
+
+    res.status(200).json({ success: true, message: 'Đăng ký lớp tín chỉ thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const huyDangKiLopTinChi = async (req, res) => {
+  const { MaSV, MaLTCs } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Xóa các lớp tín chỉ không còn trong danh sách MaLTCs (nếu chưa có điểm và chưa bắt đầu học)
+    const deleteDangKiQuery = `
+      DELETE FROM DangKi
+      WHERE MaSV = '${MaSV}'
+      AND MaLTC IN ('${MaLTCs.join("', '")}')
+      AND (DiemCC IS NULL AND DiemGK IS NULL AND DiemCK IS NULL)
+      AND MaLTC NOT IN (
+        SELECT ltc.MaLTC
+        FROM LopTinChi ltc
+        WHERE ltc.NgayBD < CONVERT(DATE, GETDATE())
+      )
+    `;
+    await pool.executeQuery(deleteDangKiQuery);
+
+    res.status(200).json({ success: true, message: 'Hủy đăng ký lớp tín chỉ thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+const huyDangKi1LopTinChi = async (req, res) => {
+  const { MaSV, MaLTC } = req.body;
+
+  try {
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Kiểm tra xem lớp tín chỉ đã được đăng ký hay chưa
+    const checkDangKiQuery = `
+      SELECT * FROM DangKi
+      WHERE MaSV = '${MaSV}'
+      AND MaLTC = '${MaLTC}'
+    `;
+    const dangKiResult = await pool.executeQuery(checkDangKiQuery);
+
+    if (dangKiResult.length === 0) {
+      return res.status(400).json({ error: 'Lớp tín chỉ chưa được đăng ký' });
+    }
+
+    // Xóa lớp tín chỉ khỏi bảng DangKi (nếu chưa có điểm và chưa bắt đầu học)
+    const deleteDangKiQuery = `
+      DELETE FROM DangKi
+      WHERE MaSV = '${MaSV}'
+      AND MaLTC = '${MaLTC}'
+      AND (DiemCC IS NULL AND DiemGK IS NULL AND DiemCK IS NULL)
+      AND MaLTC NOT IN (
+        SELECT ltc.MaLTC
+        FROM LopTinChi ltc
+        WHERE ltc.NgayBD < CONVERT(DATE, GETDATE())
+      )
+    `;
+    await pool.executeQuery(deleteDangKiQuery);
+
+    res.status(200).json({ success: true, message: 'Hủy đăng ký lớp tín chỉ thành công' });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 module.exports = {
   getAllSinhVien,
@@ -392,5 +621,10 @@ module.exports = {
   choSinhVienNghi,
   hienThiDiemTheoHocKi,
   hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau,
-  dieuChinhDangKiMonHoc
+  dieuChinhDangKiMonHoc,//đã fix
+  hienThiLTCsDaDangKi,
+  dangKiLopTinChi, //đã fix
+  dangKi1LopTinChi,
+  huyDangKiLopTinChi, //đã fix
+  huyDangKi1LopTinChi
 };
