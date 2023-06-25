@@ -4,7 +4,7 @@ const config = {
   server: 'localhost',
   user: 'sa',
   password: '<Sang_123456>',
-  database: 'qldiem_KienTruc1',
+  database: 'qldiem_KienTruc2',
   options: {
     encrypt: true,
     trustServerCertificate: true,

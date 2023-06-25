@@ -12,4 +12,8 @@ router.post('/themloptinchi', auth.verifyTokenQuanLi, lopTinChiController.themLo
 router.put('/sualoptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.suaLopTinChi);
 router.delete('/xoaloptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.xoaLopTinChi);
 
+router.get('/hienThiDanhSachLichHoc',auth.verifyTokenQuanLi, lopTinChiController.getAllLopTinChi);
+router.post('/themLichHoc', auth.verifyTokenQuanLi, lopTinChiController.themLopTinChi);
+router.delete('/xoaloptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.xoaLopTinChi);
+
 module.exports = router;

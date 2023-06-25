@@ -320,7 +320,7 @@ let xoaBuoiCoTheDay = async (req, res) => {
 
 let hienThiBangPhanCongTheoGiangVien = async (req, res) => {
   const { MaGV } = req.params;
-
+  console.log(MaGV)
   try {
     // Kiểm tra xem giảng viên có tồn tại hay không
     const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
@@ -330,12 +330,13 @@ let hienThiBangPhanCongTheoGiangVien = async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
     }
 
-    // Câu truy vấn SQL để lấy thông tin phân công của giảng viên
+    // Truy vấn SQL để lấy thông tin phân công của giảng viên
     const query = `
-      SELECT pc.MaPhanCong, gv.MaGV, gv.TenGV, mh.MaMH, mh.TenMH, pc.MaLop, pc.NgayPhanCong
+      SELECT pc.MaLTC, gv.MaGV, gv.TenGV, ltc.MaMH, mh.TenMH
       FROM PhanCong pc
       INNER JOIN GiangVien gv ON pc.MaGV = gv.MaGV
-      INNER JOIN MonHoc mh ON pc.MaMH = mh.MaMH
+      INNER JOIN LopTinChi ltc ON pc.MaLTC = ltc.MaLTC
+      INNER JOIN MonHoc mh ON ltc.MaMH = mh.MaMH
       WHERE gv.MaGV = '${MaGV}'
     `;
 
@@ -350,16 +351,18 @@ let hienThiBangPhanCongTheoGiangVien = async (req, res) => {
   }
 };
 
+
 let phanCongGiangVien = async (req, res) => {
   const { MaGV, MaLTC } = req.body;
 
   try {
-    // Kiểm tra xem giảng viên có khả năng dạy môn đó hay không
+    // Kiểm tra xem giảng viên có khả năng dạy ltc đó hay không
     const checkDayQuery = `
-      SELECT *
-      FROM Day d
-      INNER JOIN MonHoc mh ON d.MaMH = mh.MaMH
-      WHERE d.MaGV = '${MaGV}' AND mh.Active = 1;
+      SELECT ltc.maltc
+      FROM PhanCong pc
+      INNER JOIN GiangVien gv ON pc.MaGV = gv.MaGV
+      INNER JOIN LopTinChi ltc ON pc.MaLTC = ltc.MaLTC
+      WHERE gv.MaGV = '${MaGV}';
     `;
     const dayResult = await pool.executeQuery(checkDayQuery);
     if (dayResult.length === 0) {
@@ -406,6 +409,36 @@ let phanCongGiangVien = async (req, res) => {
   }
 };
 
+let xoaPhanCongGiangVien = async (req, res) => {
+  const { MaGV, MaLTC } = req.body;
+
+  try {
+    // Kiểm tra xem phân công giảng viên tồn tại hay không
+    const checkPhanCongQuery = `
+      SELECT *
+      FROM PhanCong
+      WHERE MaGV = '${MaGV}' AND MaLTC = '${MaLTC}';
+    `;
+    const phanCongResult = await pool.executeQuery(checkPhanCongQuery);
+    if (phanCongResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy phân công giảng viên' });
+    }
+
+    // Xóa phân công giảng viên
+    const deletePhanCongQuery = `
+      DELETE FROM PhanCong
+      WHERE MaGV = '${MaGV}' AND MaLTC = '${MaLTC}';
+    `;
+    await pool.executeQuery(deletePhanCongQuery);
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
 let dieuChinhKhaNangDay = async (req, res) => {
   const { MaGV, MaMHs } = req.body;
 
@@ -448,7 +481,7 @@ let dieuChinhKhaNangDay = async (req, res) => {
 };
 let hienThiKhaNangDay = async (req, res) => {
   try {
-    const { MaGV } = req.body;
+    const { MaGV } = req.params;
 
     // Kiểm tra xem giảng viên có tồn tại hay không
     const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
@@ -561,8 +594,9 @@ module.exports = {
   xoaBuoiCoTheDay,
 
   hienThiBangPhanCongTheoGiangVien,
-
   phanCongGiangVien,
+  xoaPhanCongGiangVien,
+
   dieuChinhKhaNangDay, //đã fix
   hienThiKhaNangDay,
   themKhaNangDay,
