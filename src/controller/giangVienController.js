@@ -225,6 +225,7 @@ let dieuChinhBuoiCoTheDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 let hienThiBuoiChuaTheDay = async (req, res) => {
   const { MaGV } = req.params;
   console.log(MaGV);
@@ -293,7 +294,6 @@ let hienThiBuoiCoTheDay = async (req, res) => {
   }
 };
 
-
 let themBuoiCoTheDay = async (req, res) => {
   const { MaGV, MaTGB } = req.body;
 
@@ -324,7 +324,6 @@ let themBuoiCoTheDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 let xoaBuoiCoTheDay = async (req, res) => {
   const { MaGV, MaTGB } = req.body;
@@ -521,6 +520,40 @@ let dieuChinhKhaNangDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+let hienThiMonChuaTheDay = async (req, res) => {
+  try {
+    const { MaGV } = req.params;
+
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Lấy danh sách các môn học giảng viên có thể dạy hiện tại
+    const getKhaNangDayQuery = `
+      SELECT Day.MaMH, MonHoc.TenMH
+      FROM Day
+      INNER JOIN MonHoc ON Day.MaMH = MonHoc.MaMH
+      WHERE Day.MaGV = '${MaGV}'
+    `;
+    const khaNangDayResult = await pool.executeQuery(getKhaNangDayQuery);
+    const khaNangDay = khaNangDayResult.map((khaNang) => khaNang.MaMH);
+
+    // Lấy danh sách các môn chưa thể dạy
+    const getMonChuaTheDayQuery = `SELECT MaMH, TenMH FROM MonHoc WHERE MaMH NOT IN ('${khaNangDay.join("','")}')`;
+    const monChuaTheDayResult = await pool.executeQuery(getMonChuaTheDayQuery);
+
+    res.status(200).json({ success: true, monChuaTheDay: monChuaTheDayResult });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 let hienThiKhaNangDay = async (req, res) => {
   try {
     const { MaGV } = req.params;
@@ -534,9 +567,17 @@ let hienThiKhaNangDay = async (req, res) => {
     }
 
     // Lấy danh sách các môn học giảng viên có thể dạy hiện tại
-    const getKhaNangDayQuery = `SELECT MaMH FROM Day WHERE MaGV = '${MaGV}'`;
+    const getKhaNangDayQuery = `
+      SELECT Day.MaMH, MonHoc.TenMH
+      FROM Day
+      INNER JOIN MonHoc ON Day.MaMH = MonHoc.MaMH
+      WHERE Day.MaGV = '${MaGV}'
+    `;
     const khaNangDayResult = await pool.executeQuery(getKhaNangDayQuery);
-    const khaNangDay = khaNangDayResult.map((khaNang) => khaNang.MaMH);
+    const khaNangDay = khaNangDayResult.map((khaNang) => ({
+      MaMH: khaNang.MaMH,
+      TenMH: khaNang.TenMH,
+    }));
 
     res.status(200).json({ success: true, khaNangDay });
   } catch (error) {
@@ -544,7 +585,6 @@ let hienThiKhaNangDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 let themKhaNangDay = async (req, res) => {
   const { MaGV, MaMH } = req.body;
@@ -640,7 +680,8 @@ module.exports = {
   phanCongGiangVien,
   xoaPhanCongGiangVien,
 
-  dieuChinhKhaNangDay, //đã fix
+  dieuChinhKhaNangDay, //
+  hienThiMonChuaTheDay,
   hienThiKhaNangDay,
   themKhaNangDay,
   xoaKhaNangDay

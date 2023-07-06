@@ -10,12 +10,9 @@ Router.get('/getallgiangvien',auth.verifyTokenQuanLi,giangVienController.getAllG
 Router.post('/themgiangvien', auth.verifyTokenQuanLi,giangVienController.themGiangVien);
 Router.put('/suaGiangVien/:Magv', auth.verifyTokenQuanLi,giangVienController.suaGiangVien);
 Router.delete('/xoaGiangVien/:Magv', auth.verifyTokenQuanLi,giangVienController.xoaGiangVien);
-
 Router.put('/choGiangVienNghi/:MaGV',    auth.verifyTokenQuanLi,giangVienController.choGiangVienNghi);
-
 Router.get('/hienThiBangThoiGianBieu', auth.verifyTokenQuanLi,giangVienController.hienThiBangThoiGianBieu);
 Router.post('/dieuChinhBuoiCoTheDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhBuoiCoTheDay);
-
 Router.get('/hienThiBuoiChuaTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiBuoiChuaTheDay);
 Router.get('/hienThiBuoiCoTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiBuoiCoTheDay);
 
@@ -27,7 +24,10 @@ Router.post('/phanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.pha
 Router.post('/xoaPhanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
 
 Router.post('/dieuChinhKhaNangDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhKhaNangDay);
+
+Router.get('/hienThiMonChuaTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiMonChuaTheDay);
 Router.get('/hienThiKhaNangDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiKhaNangDay);
+
 Router.post('/themKhaNangDay', auth.verifyTokenQuanLi, giangVienController.themKhaNangDay);
 Router.delete('/xoaKhaNangDay', auth.verifyTokenQuanLi, giangVienController.xoaKhaNangDay);
 
