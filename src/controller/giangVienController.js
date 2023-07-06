@@ -225,6 +225,41 @@ let dieuChinhBuoiCoTheDay = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+let hienThiBuoiChuaTheDay = async (req, res) => {
+  const { MaGV } = req.params;
+  console.log(MaGV);
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Lấy danh sách các buổi giảng viên đã có thể dạy
+    const getBuoiCoTheDayQuery = `SELECT MaTGB FROM BuoiCoTheDay WHERE MaGV = '${MaGV}'`;
+    const buoiCoTheDayResult = await pool.executeQuery(getBuoiCoTheDayQuery);
+    const buoiCoTheDayList = buoiCoTheDayResult.map((buoi) => buoi.MaTGB);
+
+    // Lấy danh sách các buổi chưa thể dạy
+    const getBuoiChuaTheDayQuery = `SELECT MaTGB, Thu, Buoi FROM ThoiGianBieu WHERE MaTGB NOT IN (${buoiCoTheDayList.join(',')})`;
+    const buoiChuaTheDayResult = await pool.executeQuery(getBuoiChuaTheDayQuery);
+
+    res.status(200).json({
+      success: true,
+      buoiChuaTheDay: buoiChuaTheDayResult.map((buoi) => ({
+        MaTGB: buoi.MaTGB,
+        Thu: buoi.Thu,
+        Buoi: buoi.Buoi,
+      })),
+    });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 let hienThiBuoiCoTheDay = async (req, res) => {
   const { MaGV } = req.params;
@@ -240,9 +275,16 @@ let hienThiBuoiCoTheDay = async (req, res) => {
     }
 
     // Lấy danh sách các buổi giảng viên có thể dạy
-    const getBuoiCoTheDayQuery = `SELECT MaTGB FROM BuoiCoTheDay WHERE MaGV = '${MaGV}'`;
+    const getBuoiCoTheDayQuery = `SELECT BuoiCoTheDay.MaTGB, ThoiGianBieu.Thu, ThoiGianBieu.Buoi
+      FROM BuoiCoTheDay
+      INNER JOIN ThoiGianBieu ON BuoiCoTheDay.MaTGB = ThoiGianBieu.MaTGB
+      WHERE BuoiCoTheDay.MaGV = '${MaGV}'`;
     const buoiCoTheDayResult = await pool.executeQuery(getBuoiCoTheDayQuery);
-    const buoiCoTheDayList = buoiCoTheDayResult.map((buoi) => buoi.MaTGB);
+    const buoiCoTheDayList = buoiCoTheDayResult.map((buoi) => ({
+      MaTGB: buoi.MaTGB,
+      Thu: buoi.Thu,
+      Buoi: buoi.Buoi,
+    }));
 
     res.status(200).json({ success: true, buoiCoTheDay: buoiCoTheDayList });
   } catch (error) {
@@ -589,6 +631,7 @@ module.exports = {
   
   dieuChinhBuoiCoTheDay, //đã fix
 
+  hienThiBuoiChuaTheDay,
   hienThiBuoiCoTheDay,
   themBuoiCoTheDay,
   xoaBuoiCoTheDay,

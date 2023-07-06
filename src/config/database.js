@@ -3,8 +3,8 @@ const sql = require('mssql');
 const config = {
   server: 'localhost',
   user: 'sa',
-  password: '<Sang_123456>',
-  database: 'qldiem_KienTruc2',
+  password: '131101',
+  database: 'qldiem_KienTruc1',
   options: {
     encrypt: true,
     trustServerCertificate: true,

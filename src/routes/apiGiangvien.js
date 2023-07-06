@@ -15,7 +15,10 @@ Router.put('/choGiangVienNghi/:MaGV',    auth.verifyTokenQuanLi,giangVienControl
 
 Router.get('/hienThiBangThoiGianBieu', auth.verifyTokenQuanLi,giangVienController.hienThiBangThoiGianBieu);
 Router.post('/dieuChinhBuoiCoTheDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhBuoiCoTheDay);
+
+Router.get('/hienThiBuoiChuaTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiBuoiChuaTheDay);
 Router.get('/hienThiBuoiCoTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiBuoiCoTheDay);
+
 Router.post('/themBuoiCoTheDay', auth.verifyTokenQuanLi, giangVienController.themBuoiCoTheDay);
 Router.post('/xoaBuoiCoTheDay', auth.verifyTokenQuanLi, giangVienController.xoaBuoiCoTheDay);
 
