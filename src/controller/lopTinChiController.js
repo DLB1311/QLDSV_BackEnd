@@ -141,6 +141,81 @@ let xoaLopTinChi = async (req, res) => {
   };
   
 
+  let hienThiLichHocChuaCoTrongLopTinChi = async (req, res) => {
+    try {
+      const { MaLTC } = req.params;
+  
+      // Lấy danh sách các lịch học có sẵn
+      const queryLichHoc = `SELECT MaTGB FROM LichHoc`;
+      const resultLichHoc = await pool.executeQuery(queryLichHoc);
+      const lichHocDaCo = resultLichHoc.map((lichHoc) => lichHoc.MaTGB);
+  
+      // Lấy danh sách các lịch học mà lớp tín chỉ chưa có
+      const queryLichHocChuaCo = `
+        SELECT MaTGB, Thu, Buoi
+        FROM ThoiGianBieu
+        WHERE MaTGB NOT IN (${lichHocDaCo.join(',')})
+      `;
+      const resultLichHocChuaCo = await pool.executeQuery(queryLichHocChuaCo);
+  
+      res.status(200).json({ success: true, lichHocChuaCo: resultLichHocChuaCo });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let hienThiPhongHocChuaCoTrongLopTinChi = async (req, res) => {
+    try {
+      const { MaLTC } = req.params;
+  
+      // Lấy danh sách các phòng học có sẵn
+      const queryPhongHoc = `SELECT MaPhongHoc FROM PhongHoc`;
+      const resultPhongHoc = await pool.executeQuery(queryPhongHoc);
+      const phongHocDaCo = resultPhongHoc.map((phongHoc) => phongHoc.MaPhongHoc);
+  
+      // Lấy danh sách các phòng học mà lớp tín chỉ chưa có
+      const queryPhongHocChuaCo = `
+        SELECT MaPhongHoc, TenPhong
+        FROM PhongHoc
+        WHERE MaPhongHoc NOT IN (
+          SELECT MaPhongHoc
+          FROM LichHoc
+          WHERE MaLTC = '${MaLTC}'
+        )
+      `;
+      const resultPhongHocChuaCo = await pool.executeQuery(queryPhongHocChuaCo);
+  
+      res.status(200).json({ success: true, phongHocChuaCo: resultPhongHocChuaCo });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  let hienThiLichHocVaPhongHocCuaLopTinChi = async (req, res) => {
+    try {
+      const { MaLTC } = req.params;
+  
+      // Lấy thông tin về lịch học và phòng học của lớp tín chỉ
+      const query = `
+        SELECT LichHoc.MaTGB, ThoiGianBieu.Thu, ThoiGianBieu.Buoi, PhongHoc.MaPhongHoc, PhongHoc.TenPhong
+        FROM LichHoc
+        INNER JOIN ThoiGianBieu ON LichHoc.MaTGB = ThoiGianBieu.MaTGB
+        INNER JOIN PhongHoc ON LichHoc.MaPhongHoc = PhongHoc.MaPhongHoc
+        WHERE LichHoc.MaLTC = '${MaLTC}'
+      `;
+      const result = await pool.executeQuery(query);
+  
+      res.status(200).json({
+        success: true,
+        lichHocPhongHoc: result,
+      });
+    } catch (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
   let themLichHoc = async (req, res) => {
     const { MaLTC, MaTGB, MaPhongHoc } = req.body;
   
@@ -182,6 +257,25 @@ let xoaLopTinChi = async (req, res) => {
         return res.status(400).json({ error: 'Lịch học đã tồn tại' });
       }
   
+      // Kiểm tra xem lớp tín chỉ khác có trùng thời gian biểu và phòng học
+      const checkConflictQuery = `
+        SELECT * FROM LichHoc LH
+        INNER JOIN LopTinChi LTC ON LH.MaLTC = LTC.MaLTC
+        WHERE LTC.NgayBD <= (
+          SELECT NgayKT FROM LopTinChi WHERE MaLTC = '${MaLTC}'
+        )
+        AND LTC.NgayKT >= (
+          SELECT NgayBD FROM LopTinChi WHERE MaLTC = '${MaLTC}'
+        )
+        AND LH.MaTGB = ${MaTGB}
+        AND LH.MaPhongHoc = ${MaPhongHoc}
+      `;
+      const conflictResult = await pool.executeQuery(checkConflictQuery);
+  
+      if (conflictResult.length > 0) {
+        return res.status(400).json({ error: 'Trùng thời gian biểu và phòng học với lớp tín chỉ khác' });
+      }
+  
       // Thêm lịch học vào cơ sở dữ liệu
       const insertLichHocQuery = `
         INSERT INTO LichHoc (MaLTC, MaTGB, MaPhongHoc)
@@ -196,8 +290,8 @@ let xoaLopTinChi = async (req, res) => {
     }
   };
 
-  let xoaLichHoc = async (req, res) => {
-    const { MaLTC } = req.params;
+  let xoaLichHocVaPhongHoc = async (req, res) => {
+    const { MaLTC, MaTGB, MaPhongHoc } = req.body;
   
     try {
       // Kiểm tra xem lớp tín chỉ có tồn tại hay không
@@ -208,24 +302,53 @@ let xoaLopTinChi = async (req, res) => {
         return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
       }
   
-      // Kiểm tra xem lịch học có tồn tại hay không
-      const checkLichHocQuery = `SELECT * FROM LichHoc WHERE MaLTC = '${MaLTC}'`;
-      const lichHocResult = await pool.executeQuery(checkLichHocQuery);
-  
-      if (lichHocResult.length === 0) {
-        return res.status(404).json({ error: 'Không tìm thấy lịch học' });
-      }
-  
-      // Xóa lịch học khỏi cơ sở dữ liệu
-      const deleteLichHocQuery = `DELETE FROM LichHoc WHERE MaLTC = '${MaLTC}'`;
+      // Xóa lịch học và phòng học liên quan
+      const deleteLichHocQuery = `
+        DELETE FROM LichHoc
+        WHERE MaLTC = '${MaLTC}'
+          AND MaTGB = ${MaTGB}
+          AND MaPhongHoc = ${MaPhongHoc}
+      `;
       await pool.executeQuery(deleteLichHocQuery);
   
-      res.status(200).json({ success: true, message: 'Xóa lịch học thành công' });
+      res.status(200).json({ success: true, message: 'Xóa lịch học và phòng học thành công' });
     } catch (error) {
       console.log('Error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+
+
+  // let xoaLichHoc = async (req, res) => {
+  //   const { MaLTC } = req.params;
+  
+  //   try {
+  //     // Kiểm tra xem lớp tín chỉ có tồn tại hay không
+  //     const checkLopTinChiQuery = `SELECT * FROM LopTinChi WHERE MaLTC = '${MaLTC}'`;
+  //     const lopTinChiResult = await pool.executeQuery(checkLopTinChiQuery);
+  
+  //     if (lopTinChiResult.length === 0) {
+  //       return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
+  //     }
+  
+  //     // Kiểm tra xem lịch học có tồn tại hay không
+  //     const checkLichHocQuery = `SELECT * FROM LichHoc WHERE MaLTC = '${MaLTC}'`;
+  //     const lichHocResult = await pool.executeQuery(checkLichHocQuery);
+  
+  //     if (lichHocResult.length === 0) {
+  //       return res.status(404).json({ error: 'Không tìm thấy lịch học' });
+  //     }
+  
+  //     // Xóa lịch học khỏi cơ sở dữ liệu
+  //     const deleteLichHocQuery = `DELETE FROM LichHoc WHERE MaLTC = '${MaLTC}'`;
+  //     await pool.executeQuery(deleteLichHocQuery);
+  
+  //     res.status(200).json({ success: true, message: 'Xóa lịch học thành công' });
+  //   } catch (error) {
+  //     console.log('Error:', error);
+  //     res.status(500).json({ error: 'Internal server error' });
+  //   }
+  // };
   
   
   
@@ -238,6 +361,11 @@ module.exports = {
   xoaLopTinChi,
 
   hienThiDanhSachLichHoc,
+
+  hienThiLichHocChuaCoTrongLopTinChi,
+  hienThiPhongHocChuaCoTrongLopTinChi,
+  hienThiLichHocVaPhongHocCuaLopTinChi,
   themLichHoc,
-  xoaLichHoc,
+  xoaLichHocVaPhongHoc,
+  // xoaLichHoc,
 };

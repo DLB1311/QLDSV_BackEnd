@@ -13,7 +13,16 @@ router.put('/sualoptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.s
 router.delete('/xoaloptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.xoaLopTinChi);
 
 router.get('/hienThiDanhSachLichHoc',auth.verifyTokenQuanLi, lopTinChiController.getAllLopTinChi);
-router.post('/themLichHoc', auth.verifyTokenQuanLi, lopTinChiController.themLopTinChi);
-router.delete('/xoaloptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.xoaLopTinChi);
+
+
+router.get('/hienThiLichHocChuaCoTrongLopTinChi/:MaLTC',auth.verifyTokenQuanLi, lopTinChiController.hienThiLichHocChuaCoTrongLopTinChi);
+router.get('/hienThiPhongHocChuaCoTrongLopTinChi/:MaLTC',auth.verifyTokenQuanLi, lopTinChiController.hienThiPhongHocChuaCoTrongLopTinChi);
+router.get('/hienThiLichHocVaPhongHocCuaLopTinChi/:MaLTC',auth.verifyTokenQuanLi, lopTinChiController.hienThiLichHocVaPhongHocCuaLopTinChi);
+router.post('/themLichHoc', auth.verifyTokenQuanLi, lopTinChiController.themLichHoc);
+router.post('/xoaLichHocVaPhongHoc', auth.verifyTokenQuanLi, lopTinChiController.xoaLichHocVaPhongHoc);
+
+
+
+// router.post('/xoaloptinchi/:MaLTC', auth.verifyTokenQuanLi, lopTinChiController.xoaLopTinChi);
 
 module.exports = router;

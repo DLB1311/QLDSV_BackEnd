@@ -29,6 +29,6 @@ Router.get('/hienThiMonChuaTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienContr
 Router.get('/hienThiKhaNangDay/:MaGV', auth.verifyTokenQuanLi, giangVienController.hienThiKhaNangDay);
 
 Router.post('/themKhaNangDay', auth.verifyTokenQuanLi, giangVienController.themKhaNangDay);
-Router.delete('/xoaKhaNangDay', auth.verifyTokenQuanLi, giangVienController.xoaKhaNangDay);
+Router.post('/xoaKhaNangDay', auth.verifyTokenQuanLi, giangVienController.xoaKhaNangDay);
 
 module.exports = Router 
