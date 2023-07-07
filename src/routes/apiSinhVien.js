@@ -17,11 +17,14 @@ Router.get('/hienThiDiemTheoHocKi', sinhVienController.hienThiDiemTheoHocKi);
 
 Router.get('/hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau', sinhVienController.hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau);
 Router.post('/dieuChinhDangKiMonHoc', auth.verifyToken ,sinhVienController.dieuChinhDangKiMonHoc);
-Router.post('/hienThiLTCsDaDangKi/:MaSV', auth.verifyToken ,sinhVienController.hienThiLTCsDaDangKi);
-Router.post('/dangKiLopTinChi', auth.verifyToken ,sinhVienController.dangKiLopTinChi);
-Router.post('/dangKi1LopTinChi', auth.verifyToken ,sinhVienController.dangKi1LopTinChi);
+// Router.post('/hienThiLTCsDaDangKi/:MaSV', auth.verifyToken ,sinhVienController.hienThiLTCsDaDangKi);
 
-Router.post('/huyDangKiLopTinChi', auth.verifyToken ,sinhVienController.huyDangKiLopTinChi);
+
+Router.get('/hienThiLopTinChiChuaDangKi', auth.verifyToken ,sinhVienController.hienThiLopTinChiChuaDangKi);
+Router.get('/hienThiLopTinChiDaDangKi', auth.verifyToken ,sinhVienController.hienThiLopTinChiDaDangKi);
+Router.post('/dangKi1LopTinChi', auth.verifyToken ,sinhVienController.dangKi1LopTinChi);
 Router.post('/huyDangKi1LopTinChi', auth.verifyToken ,sinhVienController.huyDangKi1LopTinChi);
 
+// Router.post('/dangKiLopTinChi', auth.verifyToken ,sinhVienController.dangKiLopTinChi);
+// Router.post('/huyDangKiLopTinChi', auth.verifyToken ,sinhVienController.huyDangKiLopTinChi);
 module.exports = Router 

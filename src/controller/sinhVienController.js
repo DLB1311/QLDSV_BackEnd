@@ -382,10 +382,16 @@ let dieuChinhDangKiMonHoc = async (req, res) => {
   }
 };
 
-const hienThiLTCsDaDangKi = async (req, res) => {
-  const { MaSV } = req.body;
-
+let hienThiLopTinChiChuaDangKi = async (req, res) => {
   try {
+    // Lấy thông tin từ token
+    const userInfo = await auth.getUserIdFromToken(req);
+    console.log(userInfo.MaTk)
+    if (!userInfo || !userInfo.MaTk) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const MaSV  = userInfo.MaTk;
     // Kiểm tra xem sinh viên có tồn tại hay không
     const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
     const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
@@ -394,11 +400,49 @@ const hienThiLTCsDaDangKi = async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
     }
 
-    // Lấy danh sách các lớp tín chỉ sinh viên đã đăng kí
-    const getDangKiQuery = `SELECT MaLTC, DiemCC, DiemGK, DiemCK FROM DangKi WHERE MaSV = '${MaSV}'`;
-    const dangKiResult = await pool.executeQuery(getDangKiQuery);
+    // Hiển thị danh sách các lớp tín chỉ chưa đăng kí của sinh viên
+    const hienThiLopTinChiQuery = `
+      SELECT LTC.MaLTC, LTC.NamHoc, LTC.HocKi, LTC.SLToiDa, LTC.NgayBD, LTC.NgayKT, LTC.Active, LTC.MaMH
+      FROM LopTinChi LTC
+      LEFT JOIN DangKi DK ON LTC.MaLTC = DK.MaLTC AND DK.MaSV = '${MaSV}'
+      WHERE DK.MaLTC IS NULL AND LTC.Active = 1
+    `;
+    const lopTinChiResult = await pool.executeQuery(hienThiLopTinChiQuery);
 
-    res.status(200).json(dangKiResult);
+    res.status(200).json({ success: true, data: lopTinChiResult });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+let hienThiLopTinChiDaDangKi = async (req, res) => {
+  try {
+    // Lấy thông tin từ token
+    const userInfo = await auth.getUserIdFromToken(req);
+    if (!userInfo || !userInfo.MaTk) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const  MaSV  = userInfo.MaTk;
+
+    // Kiểm tra xem sinh viên có tồn tại hay không
+    const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
+    const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
+
+    if (sinhVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+    }
+
+    // Hiển thị danh sách các lớp tín chỉ sinh viên đã đăng kí
+    const hienThiLopTinChiQuery = `
+      SELECT LTC.MaLTC, LTC.NamHoc, LTC.HocKi, LTC.SLToiDa, LTC.NgayBD, LTC.NgayKT, LTC.Active, LTC.MaMH
+      FROM LopTinChi LTC
+      INNER JOIN DangKi DK ON LTC.MaLTC = DK.MaLTC
+      WHERE DK.MaSV = '${MaSV}' AND LTC.Active = 1
+    `;
+    const lopTinChiResult = await pool.executeQuery(hienThiLopTinChiQuery);
+
+    res.status(200).json({ success: true, data: lopTinChiResult });
   } catch (error) {
     console.log('Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -472,9 +516,17 @@ const dangKiLopTinChi = async (req, res) => {
 };
 
 const dangKi1LopTinChi = async (req, res) => {
-  const { MaSV, MaLTC } = req.body;
-
   try {
+    // Lấy thông tin từ token
+    const userInfo = await auth.getUserIdFromToken(req);
+    if (!userInfo || !userInfo.MaTk) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { MaLTC } = req.body;
+    console.log(MaLTC)
+    const MaSV = userInfo.MaTk;
+
     // Kiểm tra xem sinh viên có tồn tại hay không
     const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
     const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
@@ -520,7 +572,7 @@ const dangKi1LopTinChi = async (req, res) => {
     `;
     const lopChuaBatDauResult = await pool.executeQuery(checkLopChuaBatDauQuery);
 
-    if (lopChuaBatDauResult.length == 0) {
+    if (lopChuaBatDauResult.length === 0) {
       return res.status(400).json({ error: `Lớp tín chỉ ${MaLTC} đã bắt đầu học` });
     }
 
@@ -568,9 +620,16 @@ const huyDangKiLopTinChi = async (req, res) => {
   }
 };
 const huyDangKi1LopTinChi = async (req, res) => {
-  const { MaSV, MaLTC } = req.body;
-
   try {
+    // Lấy thông tin từ token
+    const userInfo = await auth.getUserIdFromToken(req);
+    if (!userInfo || !userInfo.MaTk) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { MaLTC } = req.body;
+    const MaSV = userInfo.MaTk;
+
     // Kiểm tra xem sinh viên có tồn tại hay không
     const checkSinhVienQuery = `SELECT * FROM SinhVien WHERE MaSV = '${MaSV}'`;
     const sinhVienResult = await pool.executeQuery(checkSinhVienQuery);
@@ -612,6 +671,7 @@ const huyDangKi1LopTinChi = async (req, res) => {
   }
 };
 
+
 module.exports = {
   getAllSinhVien,
   hienSinhVien,
@@ -622,7 +682,9 @@ module.exports = {
   hienThiDiemTheoHocKi,
   hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau,
   dieuChinhDangKiMonHoc,//đã fix
-  hienThiLTCsDaDangKi,
+
+  hienThiLopTinChiChuaDangKi,
+  hienThiLopTinChiDaDangKi,
   dangKiLopTinChi, //đã fix
   dangKi1LopTinChi,
   huyDangKiLopTinChi, //đã fix

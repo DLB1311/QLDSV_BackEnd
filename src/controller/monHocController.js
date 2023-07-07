@@ -224,6 +224,7 @@ let themMonHoc = async (req, res) => {
     }
   };
 
+
   let chinhSuaDiemSinhVien = async (req, res) => {
     const { MaSV, MaLTC, DiemCC, DiemGK, DiemCK } = req.body;
   
@@ -384,6 +385,7 @@ let themMonHoc = async (req, res) => {
     chinhSuaLopTinChi,
     xoaLopTinChi,
     hienThiDanhSachDangKi,
+    
     chinhSuaDiemSinhVien,
     dieuChinhLichHoc, // đã fix
     hienThiLichHoc,
