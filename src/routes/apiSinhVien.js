@@ -14,6 +14,7 @@ Router.delete('/xoaSinhVien/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.x
 Router.put('/choSinhVienNghi/:MaSV', auth.verifyTokenQuanLi ,sinhVienController.choSinhVienNghi);
 
 Router.get('/hienThiDiemTheoHocKi', sinhVienController.hienThiDiemTheoHocKi);
+Router.get('/hienThiDiemTheoHocKi1', sinhVienController.hienThiDiemTheoHocKi1);
 
 Router.get('/hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau', sinhVienController.hienThiLopChuaCoDiemVaChuaDenThoiGianBatDau);
 Router.post('/dieuChinhDangKiMonHoc', auth.verifyToken ,sinhVienController.dieuChinhDangKiMonHoc);
