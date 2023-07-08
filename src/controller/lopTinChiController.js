@@ -37,17 +37,30 @@ let layLopTinChi = async (req, res) => {
 };
 
 let themLopTinChi = async (req, res) => {
-  const { MaLTC, NamHoc, HocKi, SLToiDa, NgayBD, NgayKT, MaMH } = req.body;
+  const { NamHoc, HocKi, SLToiDa, NgayBD, NgayKT, MaMH } = req.body;
 
   try {
+    // Lấy MaLTC lớn nhất hiện tại từ bảng LopTinChi để xác định số tiếp theo
+    const getMaxMaLTCQuery = "SELECT MAX(CAST(SUBSTRING(MaLTC, 4, LEN(MaLTC)) AS INT)) AS MaxMaLTC FROM dbo.LopTinChi";
+    const maxMaLTCResult = await pool.executeQuery(getMaxMaLTCQuery);
+    const maxMaLTC = maxMaLTCResult.length > 0 ? maxMaLTCResult[0].MaxMaLTC : 0; // Lấy giá trị số lớn nhất
+
+    // Tạo mã lớp tín chỉ mới
+    let nextMaLTC = 'LTC1'; // Mã lớp tín chỉ khởi tạo ban đầu
+    if (maxMaLTC) {
+      const currentNumber = parseInt(maxMaLTC); // Lấy số từ MaLTC hiện tại
+      const nextNumber = currentNumber + 1;
+      nextMaLTC = 'LTC' + nextNumber.toString().padStart(1, '0'); // Tạo mã lớp tín chỉ tăng dần
+    }
+
     const insertLopTinChiQuery = `
       INSERT INTO dbo.LopTinChi (MaLTC, NamHoc, HocKi, SLToiDa, NgayBD, NgayKT, MaMH)
-      VALUES ('${MaLTC}', '${NamHoc}', '${HocKi}', ${SLToiDa}, '${NgayBD}', '${NgayKT}', '${MaMH}')
+      VALUES ('${nextMaLTC}', '${NamHoc}', '${HocKi}', ${SLToiDa}, '${NgayBD}', '${NgayKT}', '${MaMH}')
     `;
 
     await pool.executeQuery(insertLopTinChiQuery);
 
-    res.status(200).json({ success: true, message: 'Thêm lớp tín chỉ thành công', MaLTC });
+    res.status(200).json({ success: true, message: 'Thêm lớp tín chỉ thành công', MaLTC: nextMaLTC });
   } catch (error) {
     console.log('Error:', error);
     res.status(500).json({ error: 'Internal server error' });

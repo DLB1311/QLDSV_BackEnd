@@ -200,7 +200,6 @@ let themMonHoc = async (req, res) => {
     }
   };
 
-
   let hienThiDanhSachDangKi = async (req, res) => {
     const { MaLTC } = req.params;
   
@@ -213,8 +212,13 @@ let themMonHoc = async (req, res) => {
         return res.status(404).json({ error: 'Không tìm thấy lớp tín chỉ' });
       }
   
-      // Lấy danh sách đăng kí của lớp tín chỉ
-      const getDanhSachDangKiQuery = `SELECT * FROM DangKi WHERE MaLTC = '${MaLTC}'`;
+      // Lấy danh sách đăng kí của lớp tín chỉ kèm thông tin sinh viên
+      const getDanhSachDangKiQuery = `
+        SELECT DK.*, SV.HoTen, SV.NgaySinh, SV.DiaChi, SV.KhoaHoc
+        FROM DangKi DK
+        INNER JOIN SinhVien SV ON DK.MaSV = SV.MaSV
+        WHERE DK.MaLTC = '${MaLTC}'
+      `;
       const danhSachDangKiResult = await pool.executeQuery(getDanhSachDangKiQuery);
   
       res.status(200).json({ success: true, danhSachDangKi: danhSachDangKiResult });
