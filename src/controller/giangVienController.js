@@ -244,9 +244,16 @@ let hienThiBuoiChuaTheDay = async (req, res) => {
     const buoiCoTheDayResult = await pool.executeQuery(getBuoiCoTheDayQuery);
     const buoiCoTheDayList = buoiCoTheDayResult.map((buoi) => buoi.MaTGB);
 
-    // Lấy danh sách các buổi chưa thể dạy
-    const getBuoiChuaTheDayQuery = `SELECT MaTGB, Thu, Buoi FROM ThoiGianBieu WHERE MaTGB NOT IN (${buoiCoTheDayList.join(',')})`;
-    const buoiChuaTheDayResult = await pool.executeQuery(getBuoiChuaTheDayQuery);
+    let buoiChuaTheDayResult = [];
+    if (buoiCoTheDayList.length > 0) {
+      // Lấy danh sách các buổi chưa thể dạy
+      const getBuoiChuaTheDayQuery = `SELECT MaTGB, Thu, Buoi FROM ThoiGianBieu WHERE MaTGB NOT IN (${buoiCoTheDayList.join(',')})`;
+      buoiChuaTheDayResult = await pool.executeQuery(getBuoiChuaTheDayQuery);
+    } else {
+      // Lấy toàn bộ danh sách các buổi
+      const getAllBuoiQuery = `SELECT MaTGB, Thu, Buoi FROM ThoiGianBieu`;
+      buoiChuaTheDayResult = await pool.executeQuery(getAllBuoiQuery);
+    }
 
     res.status(200).json({
       success: true,
