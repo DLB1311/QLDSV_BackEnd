@@ -22,7 +22,7 @@ Router.post('/xoaBuoiCoTheDay', auth.verifyTokenQuanLi, giangVienController.xoaB
 Router.get('/hienThiBangChuaPhanCongTheoGiangVien/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBangChuaPhanCongTheoGiangVien);
 Router.get('/hienThiBangPhanCongTheoGiangVien/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBangPhanCongTheoGiangVien);
 Router.post('/phanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
-Router.post('/xoaPhanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
+Router.post('/xoaPhanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.xoaPhanCongGiangVien);
 
 
 
