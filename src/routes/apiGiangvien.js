@@ -19,9 +19,12 @@ Router.get('/hienThiBuoiCoTheDay/:MaGV', auth.verifyTokenQuanLi, giangVienContro
 Router.post('/themBuoiCoTheDay', auth.verifyTokenQuanLi, giangVienController.themBuoiCoTheDay);
 Router.post('/xoaBuoiCoTheDay', auth.verifyTokenQuanLi, giangVienController.xoaBuoiCoTheDay);
 
+Router.get('/hienThiBangChuaPhanCongTheoGiangVien/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBangChuaPhanCongTheoGiangVien);
 Router.get('/hienThiBangPhanCongTheoGiangVien/:MaGV', auth.verifyTokenQuanLi,giangVienController.hienThiBangPhanCongTheoGiangVien);
 Router.post('/phanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
 Router.post('/xoaPhanCongGiangVien', auth.verifyTokenQuanLi,giangVienController.phanCongGiangVien);
+
+
 
 Router.post('/dieuChinhKhaNangDay', auth.verifyTokenQuanLi,giangVienController.dieuChinhKhaNangDay);
 

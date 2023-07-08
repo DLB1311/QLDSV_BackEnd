@@ -356,6 +356,58 @@ let xoaBuoiCoTheDay = async (req, res) => {
   }
 };
 
+let hienThiBangChuaPhanCongTheoGiangVien = async (req, res) => {
+  const { MaGV } = req.params;
+
+  try {
+    // Kiểm tra xem giảng viên có tồn tại hay không
+    const checkGiangVienQuery = `SELECT * FROM GiangVien WHERE MaGV = '${MaGV}'`;
+    const giangVienResult = await pool.executeQuery(checkGiangVienQuery);
+
+    if (giangVienResult.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giảng viên' });
+    }
+
+    // Truy vấn SQL để lấy thông tin phân công của giảng viên
+    const query = `
+      SELECT pc.MaLTC, gv.MaGV, gv.HoTen, ltc.MaMH, mh.TenMH
+      FROM PhanCong pc
+      INNER JOIN GiangVien gv ON pc.MaGV = gv.MaGV
+      INNER JOIN LopTinChi ltc ON pc.MaLTC = ltc.MaLTC
+      INNER JOIN MonHoc mh ON ltc.MaMH = mh.MaMH
+      WHERE gv.MaGV = '${MaGV}'
+    `;
+
+    // Thực hiện truy vấn
+    const result = await pool.executeQuery(query);
+
+    // Lấy danh sách các lớp tín chỉ đã được phân công
+    const danhSachDaPhanCong = result.map((row) => row.MaLTC);
+
+    // Lấy danh sách các lớp tín chỉ chưa được phân công, có lịch học trùng với CuoiCoTheDay của giảng viên và có môn học giảng viên có thể dạy được
+    const queryLopTinChiChuaPhanCong = `
+      SELECT LTC.MaLTC, LTC.NamHoc, LTC.HocKi, LTC.SLToiDa, LTC.NgayBD, LTC.NgayKT, LTC.Active, LTC.MaMH
+      FROM LopTinChi LTC
+      WHERE LTC.Active = 1 
+        AND LTC.MaMH IN (
+          SELECT MH.MaMH
+          FROM MonHoc MH
+          INNER JOIN Day D ON D.MaMH = MH.MaMH
+          INNER JOIN BuoiCoTheDay BCTD ON BCTD.MaGV = D.MaGV
+          INNER JOIN LichHoc LH ON LH.MaTGB = BCTD.MaTGB AND LH.MaLTC = LTC.MaLTC
+          WHERE D.MaGV = '${MaGV}'
+        )
+        AND LTC.MaLTC NOT IN (${danhSachDaPhanCong.map((maLTC) => `'${maLTC}'`).join(',')})
+    `;
+
+    const lopTinChiChuaPhanCongResult = await pool.executeQuery(queryLopTinChiChuaPhanCong);
+
+    res.status(200).json({ success: true, data: lopTinChiChuaPhanCongResult });
+  } catch (error) {
+    console.log('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 
 
@@ -373,7 +425,7 @@ let hienThiBangPhanCongTheoGiangVien = async (req, res) => {
 
     // Truy vấn SQL để lấy thông tin phân công của giảng viên
     const query = `
-      SELECT pc.MaLTC, gv.MaGV, gv.TenGV, ltc.MaMH, mh.TenMH
+      SELECT pc.MaLTC, gv.MaGV, gv.HoTen, ltc.MaMH, mh.TenMH
       FROM PhanCong pc
       INNER JOIN GiangVien gv ON pc.MaGV = gv.MaGV
       INNER JOIN LopTinChi ltc ON pc.MaLTC = ltc.MaLTC
@@ -676,6 +728,7 @@ module.exports = {
   themBuoiCoTheDay,
   xoaBuoiCoTheDay,
 
+  hienThiBangChuaPhanCongTheoGiangVien,
   hienThiBangPhanCongTheoGiangVien,
   phanCongGiangVien,
   xoaPhanCongGiangVien,

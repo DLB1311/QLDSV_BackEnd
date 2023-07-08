@@ -36,6 +36,7 @@ let layLopTinChi = async (req, res) => {
   }
 };
 
+
 let themLopTinChi = async (req, res) => {
   const { NamHoc, HocKi, SLToiDa, NgayBD, NgayKT, MaMH } = req.body;
 
@@ -159,7 +160,7 @@ let xoaLopTinChi = async (req, res) => {
       const { MaLTC } = req.params;
   
       // Lấy danh sách các lịch học có sẵn
-      const queryLichHoc = `SELECT MaTGB FROM LichHoc`;
+      const queryLichHoc = `SELECT MaTGB FROM LichHoc WHERE MaLTC = '${MaLTC}'`;
       const resultLichHoc = await pool.executeQuery(queryLichHoc);
       const lichHocDaCo = resultLichHoc.map((lichHoc) => lichHoc.MaTGB);
   
@@ -167,7 +168,11 @@ let xoaLopTinChi = async (req, res) => {
       const queryLichHocChuaCo = `
         SELECT MaTGB, Thu, Buoi
         FROM ThoiGianBieu
-        WHERE MaTGB NOT IN (${lichHocDaCo.join(',')})
+        WHERE MaTGB NOT IN (
+          SELECT MaTGB
+          FROM LichHoc
+          WHERE MaLTC = '${MaLTC}'
+        )
       `;
       const resultLichHocChuaCo = await pool.executeQuery(queryLichHocChuaCo);
   
