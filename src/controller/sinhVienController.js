@@ -451,6 +451,7 @@ let dieuChinhDangKiMonHoc = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 let hienThiLopTinChiChuaDangKi = async (req, res) => {
   try {
     // Lấy thông tin từ token
@@ -480,12 +481,42 @@ let hienThiLopTinChiChuaDangKi = async (req, res) => {
     `;
     const lopTinChiResult = await pool.executeQuery(hienThiLopTinChiQuery);
 
+    // Tính số lượng sinh viên đã đăng kí vào từng lớp
+    const soLuongDaDangKiQuery = `
+      SELECT MaLTC, COUNT(MaLTC) AS SoLuongDaDangKi
+      FROM DangKi
+      WHERE MaLTC IN (SELECT MaLTC FROM LopTinChi WHERE Active = 1)
+      GROUP BY MaLTC
+    `;
+    const soLuongDaDangKiResult = await pool.executeQuery(soLuongDaDangKiQuery);
+
+    // Tạo một đối tượng để lưu số lượng còn lại của từng lớp
+    const soLuongConLaiMap = {};
+    for (const lopTinChi of lopTinChiResult) {
+      const maLTC = lopTinChi.MaLTC;
+      soLuongConLaiMap[maLTC] = lopTinChi.SLToiDa;
+    }
+
+    // Cập nhật số lượng còn lại dựa trên số lượng sinh viên đã đăng kí
+    for (const dangKi of soLuongDaDangKiResult) {
+      const maLTC = dangKi.MaLTC;
+      const soLuongDaDangKi = dangKi.SoLuongDaDangKi;
+      soLuongConLaiMap[maLTC] -= soLuongDaDangKi;
+    }
+
+    // Cập nhật số lượng còn lại trong kết quả trả về
+    for (const lopTinChi of lopTinChiResult) {
+      const maLTC = lopTinChi.MaLTC;
+      lopTinChi.SoLuongConLai = soLuongConLaiMap[maLTC];
+    }
+
     res.status(200).json({ success: true, data: lopTinChiResult });
   } catch (error) {
     console.log('Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 let hienThiLopTinChiDaDangKi = async (req, res) => {
   try {

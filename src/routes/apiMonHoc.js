@@ -17,7 +17,7 @@ Router.put('/chinhSuaLopTinChi', auth.verifyTokenQuanLi , monHocController.chinh
 Router.put('/xoaLopTinChi', auth.verifyTokenQuanLi , monHocController.xoaLopTinChi);
 
 Router.get('/hienThiDanhSachDangKi/:MaLTC', auth.verifyTokenQuanLi , monHocController.hienThiDanhSachDangKi);
-Router.put('/chinhSuaDiemSinhVien', auth.verifyTokenQuanLi , monHocController.chinhSuaDiemSinhVien);
+Router.post('/chinhSuaDiemSinhVien', auth.verifyTokenQuanLi , monHocController.chinhSuaDiemSinhVien);
 
 Router.post('/dieuChinhLichHoc', auth.verifyTokenQuanLi , monHocController.dieuChinhLichHoc);
 Router.get('/hienThiLichHoc', auth.verifyTokenQuanLi, monHocController.hienThiLichHoc);
